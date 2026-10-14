@@ -1,0 +1,12 @@
+{
+  "title": "Coral USB",
+  "description": {
+    "de": "Coral-USB-Erkennung, Diagnose und Geräteauswahl für Container. Die App muss ihre eigene Edge-TPU-Laufzeit mitbringen. PCIe/M.2 wird nicht unterstützt.",
+    "en": "Coral USB discovery, diagnostics and container device selection. Apps must provide their own Edge TPU runtime. PCIe/M.2 is not supported."
+  },
+  "contains": {
+    "de": ["titanos-coral-info: Erkennung vor und nach Firmwareinitialisierung", "Container-Zuordnung für Coral USB", "Keine gebündelte proprietäre Google-Laufzeit"],
+    "en": ["titanos-coral-info: detection before and after firmware initialization", "Coral USB container selection", "No bundled proprietary Google runtime"]
+  },
+  "modules": [], "services": []
+}
