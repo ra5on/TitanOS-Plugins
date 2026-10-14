@@ -1,0 +1,127 @@
+{
+  "driver": "615.71.09",
+  "toolkit": "1.20.1",
+  "repository": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/",
+  "packages": [
+    {
+      "name": "firmware-nvidia-gsp",
+      "version": "615.71.09-2",
+      "file": "firmware-nvidia-gsp_615.71.09-2_amd64.deb",
+      "sha256": "2f72dd12294aba56fc26ab46f61c6df0bdb403300bb12f80312ad7fd60268506"
+    },
+    {
+      "name": "libcuda1",
+      "version": "615.71.09-2",
+      "file": "libcuda1_615.71.09-2_amd64.deb",
+      "sha256": "75643aab978f99c52d6e8e40ac28dd56182ca187d2dc1de581e755ac2ecd10c6"
+    },
+    {
+      "name": "libnvcuvid1",
+      "version": "615.71.09-2",
+      "file": "libnvcuvid1_615.71.09-2_amd64.deb",
+      "sha256": "b0ebc660e4c18d7f0ba204685092e05d01a2e1d6a6287e43c583526aeadeb333"
+    },
+    {
+      "name": "libnvidia-cfg1",
+      "version": "615.71.09-2",
+      "file": "libnvidia-cfg1_615.71.09-2_amd64.deb",
+      "sha256": "93b96b584df7e9660887fe6a89031d66c253b16d79c283adea96e833733c63e4"
+    },
+    {
+      "name": "libnvidia-container-tools",
+      "version": "1.20.1-1",
+      "file": "libnvidia-container-tools_1.20.1-1_amd64.deb",
+      "sha256": "cac243e4c64037515c0be82a4a3dc700497a48fdc4b675d573aaa3611403b304"
+    },
+    {
+      "name": "libnvidia-container1",
+      "version": "1.20.1-1",
+      "file": "libnvidia-container1_1.20.1-1_amd64.deb",
+      "sha256": "6c968fc75aa54d328363c90c909d59030774f8491d0122be3132f76a69c73dfa"
+    },
+    {
+      "name": "libnvidia-encode1",
+      "version": "615.71.09-2",
+      "file": "libnvidia-encode1_615.71.09-2_amd64.deb",
+      "sha256": "c6f9c81d37d9079f95e47655d4a40d988948d720bd4412193af758634366ff9c"
+    },
+    {
+      "name": "libnvidia-gpucomp",
+      "version": "615.71.09-2",
+      "file": "libnvidia-gpucomp_615.71.09-2_amd64.deb",
+      "sha256": "d7d50072a808ad36a38393cc593c4fc5547e2a7fe9ae65a09784c0f8ab0edb46"
+    },
+    {
+      "name": "libnvidia-ml1",
+      "version": "615.71.09-2",
+      "file": "libnvidia-ml1_615.71.09-2_amd64.deb",
+      "sha256": "737b4ee1b3eb66c695948bad3d7c2bb72c1cfdb7a02e3f5e1e1f7a3576d1913e"
+    },
+    {
+      "name": "libnvidia-nvvm4",
+      "version": "615.71.09-2",
+      "file": "libnvidia-nvvm4_615.71.09-2_amd64.deb",
+      "sha256": "04fdd70949818d170ff8dd8d1e0a6a48e44f9e0f18cfe33d563a91d40f9847c0"
+    },
+    {
+      "name": "libnvidia-pkcs11-openssl3",
+      "version": "615.71.09-2",
+      "file": "libnvidia-pkcs11-openssl3_615.71.09-2_amd64.deb",
+      "sha256": "3a1a8edf0c2e41d399b82be2bed87c223d2454b24d0d4d08a7790c1a56124a58"
+    },
+    {
+      "name": "libnvidia-ptxjitcompiler1",
+      "version": "615.71.09-2",
+      "file": "libnvidia-ptxjitcompiler1_615.71.09-2_amd64.deb",
+      "sha256": "75dcc79e5da85687f997eecf8c607b8c7127997dfe13b48d655f4cc2941fae15"
+    },
+    {
+      "name": "nvidia-container-toolkit",
+      "version": "1.20.1-1",
+      "file": "nvidia-container-toolkit_1.20.1-1_amd64.deb",
+      "sha256": "4ee1fac6f8a65bd51088380151a8cd1977c01a4ac7c5da5cc82a3b47d93dd0f7"
+    },
+    {
+      "name": "nvidia-container-toolkit-base",
+      "version": "1.20.1-1",
+      "file": "nvidia-container-toolkit-base_1.20.1-1_amd64.deb",
+      "sha256": "4565cdd2e5f5cd2a211d4203f70eef32bf4e3bf84bde8fab4134873b4bc45c92"
+    },
+    {
+      "name": "nvidia-kernel-open-dkms",
+      "version": "615.71.09-2",
+      "file": "nvidia-kernel-open-dkms_615.71.09-2_amd64.deb",
+      "sha256": "5d49df263cf077dce2cbe97248e4aa32be1eba32ff16c0424fc80ed92b320602"
+    },
+    {
+      "name": "nvidia-modprobe",
+      "version": "615.71.09-2",
+      "file": "nvidia-modprobe_615.71.09-2_amd64.deb",
+      "sha256": "ef6624abccd8d15e156b3c05fe987e23087c1e2f696104b97a9bb428b21fead0"
+    },
+    {
+      "name": "nvidia-persistenced",
+      "version": "615.71.09-2",
+      "file": "nvidia-persistenced_615.71.09-2_amd64.deb",
+      "sha256": "cf621edeab7b3f4be67c6adc8f01880a2f25dbf4d2fb3557b3a1f096728f667e"
+    },
+    {
+      "name": "libnvidia-sandboxutils",
+      "version": "615.71.09-2",
+      "file": "libnvidia-sandboxutils_615.71.09-2_amd64.deb",
+      "sha256": "70619c7996465e5eb441e3a81b436c1509cda70b70f44d5e0b5712feb790bb21"
+    },
+    {
+      "name": "nvidia-driver-cuda",
+      "version": "615.71.09-2",
+      "file": "nvidia-driver-cuda_615.71.09-2_amd64.deb",
+      "sha256": "c718851825f094bd1591503ebe857d01b4445e38d483cf08cbdf0bee77a1fe11"
+    },
+    {
+      "name": "nvidia-kernel-support",
+      "version": "615.71.09-2",
+      "file": "nvidia-kernel-support_615.71.09-2_amd64.deb",
+      "sha256": "3d03ebd1318fa1adb9832183612c2d921b6cc0346b47b33583734f7f3675da3d"
+    }
+  ]
+}

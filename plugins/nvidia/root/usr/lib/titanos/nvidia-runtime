@@ -1,0 +1,21 @@
+#!/bin/sh
+# Runs only inside TitanOS after its optional, verified extension was mounted.
+set -eu
+case "${1:-}" in
+    start)
+        /sbin/ldconfig -X
+        # The official helper creates /dev/nvidia* and /dev/nvidia-uvm.
+        nvidia-modprobe -c 0
+        nvidia-modprobe -u
+        nvidia-smi -L
+        mkdir -p /run/cdi
+        # Atomic publication: Docker never reads an incomplete device description.
+        nvidia-ctk cdi generate --format=yaml --output=/run/cdi/.titanos-nvidia.tmp
+        mv /run/cdi/.titanos-nvidia.tmp /run/cdi/titanos-nvidia.yaml
+        ;;
+    stop)
+        # An in-use module is refused by the plugin manager before unmounting.
+        rm -f /run/cdi/titanos-nvidia.yaml /run/cdi/.titanos-nvidia.tmp
+        ;;
+    *) exit 2 ;;
+esac
