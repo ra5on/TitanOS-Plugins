@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+# Keep Tailscale's packet marks, anti-spoofing and scoped rules before TitanOS's
+# temporary blanket ACCEPT. Its forwarding marks are required for subnet SNAT.
+# A future firewall must preserve these hooks and permit UDP/41641 egress/input.
+for firewall in iptables ip6tables; do
+    for pair in INPUT:ts-input FORWARD:ts-forward; do
+        parent=${pair%:*} chain=${pair#*:}
+        "$firewall" -w 5 -S "$chain" >/dev/null 2>&1 || continue
+        first=$("$firewall" -w 5 -S "$parent" | sed -n '2p')
+        [ "$first" != "-A $parent -j $chain" ] || continue
+        while "$firewall" -w 5 -C "$parent" -j "$chain" 2>/dev/null; do
+            "$firewall" -w 5 -D "$parent" -j "$chain"
+        done
+        "$firewall" -w 5 -I "$parent" 1 -j "$chain"
+    done
+done

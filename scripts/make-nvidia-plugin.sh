@@ -24,6 +24,7 @@ mkosi --directory plugins/nvidia/build --output-directory "$work" \
     --package "linux-headers-$kernel" --force build
 root=$work/root
 stage=$work/plugin
+python3 scripts/make-nvidia-sdk.py "$root" "$kernel" "$version" "$output"
 
 while read -r file; do
     if [[ $file == nvidia-kernel-open-dkms_* ]]; then

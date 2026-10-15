@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Select a coherent NVIDIA package set from authenticated Debian metadata.
 
-Only CI/build machines use this: NAS devices download signed, compiled sysexts.
+Used in CI and inside the verified build environment on a NAS data volume.
 The pinned NVIDIA archive key authenticates InRelease, which authenticates the
 compressed package index. No apt install or maintainer script is executed.
 """

@@ -37,7 +37,7 @@ printf 'ID=titanos\nSYSEXT_LEVEL=1\n' > "$work/root/usr/lib/extension-release.d/
 
 mkdir -p "$out"
 rm -f "$out/$name.raw"
-mksquashfs "$work/root" "$out/$name.raw" -comp zstd -all-root -noappend -quiet
+mksquashfs "$work/root" "$out/$name.raw" -comp zstd -all-root -noappend -quiet -processors "${SQUASHFS_PROCESSORS:-2}"
 
 extra='{}'
 [ -f "$source/plugin.json" ] && extra=$(cat "$source/plugin.json")

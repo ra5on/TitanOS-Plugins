@@ -21,3 +21,5 @@ cp LICENSE.md "$work/coral/usr/share/titanos/coral/"
 chmod -R go-w "$work/coral"
 scripts/make-plugin.sh coral-usb "$version" "$work/coral" out/plugins
 tar -C "$work/coral/usr/share" -czf out/plugins/coral-usb-licenses.tar.gz titanos/coral
+
+python3 scripts/make-tailscale-plugin.py "$version"
