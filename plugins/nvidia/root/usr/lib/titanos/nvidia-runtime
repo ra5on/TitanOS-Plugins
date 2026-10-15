@@ -10,12 +10,20 @@ case "${1:-}" in
         nvidia-smi -L
         mkdir -p /run/cdi
         # Atomic publication: Docker never reads an incomplete device description.
-        nvidia-ctk cdi generate --format=yaml --output=/run/cdi/.titanos-nvidia.tmp
-        mv /run/cdi/.titanos-nvidia.tmp /run/cdi/titanos-nvidia.yaml
+        # nvidia-ctk appends .yaml to unrecognized output extensions. Use
+        # stdout so the temporary file remains invisible to CDI discovery.
+        rm -f /run/cdi/.titanos-nvidia.tmp.yaml
+        temporary=$(mktemp /run/cdi/.titanos-nvidia.XXXXXX)
+        trap 'rm -f "$temporary"' 0
+        trap 'exit 1' HUP INT TERM
+        nvidia-ctk cdi generate --format=yaml --output= > "$temporary"
+        test -s "$temporary"
+        chmod 0644 "$temporary"
+        mv "$temporary" /run/cdi/titanos-nvidia.yaml
         ;;
     stop)
         # An in-use module is refused by the plugin manager before unmounting.
-        rm -f /run/cdi/titanos-nvidia.yaml /run/cdi/.titanos-nvidia.tmp
+        rm -f /run/cdi/titanos-nvidia.yaml /run/cdi/.titanos-nvidia.tmp /run/cdi/.titanos-nvidia.tmp.yaml
         ;;
     *) exit 2 ;;
 esac

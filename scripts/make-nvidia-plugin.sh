@@ -7,7 +7,10 @@ cd "$(dirname "$0")/.."
 version=${1:?usage: make-nvidia-plugin.sh <TitanOS version>}
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$ ]]
 [[ $(id -u) == 0 ]] || { echo "Run with sudo; only the disposable build root is changed" >&2; exit 1; }
-kernel=$(cat build/mkosi.output/kernel-version)
+kernel=${NVIDIA_KERNEL:-$(cat build/mkosi.output/kernel-version)}
+[[ $kernel =~ ^[A-Za-z0-9][A-Za-z0-9.+_-]{0,100}$ ]]
+revision=${NVIDIA_REVISION:-0}
+[[ $revision =~ ^[0-9]+$ ]]
 driver=$(python3 -c 'import json; print(json.load(open("plugins/nvidia/packages.lock.json"))["driver"])')
 work=$(realpath -m out/nvidia-build)
 packages=$(realpath -m out/nvidia-packages)
@@ -69,11 +72,22 @@ done
 test -s "$stage/usr/lib/firmware/nvidia/$driver/gsp_tu10x.bin"
 test -s "$stage/usr/lib/firmware/nvidia/$driver/gsp_ga10x.bin"
 cp plugins/nvidia/packages.lock.json "$stage/usr/share/titanos/nvidia/"
+cp LICENSE.md "$stage/usr/share/titanos/nvidia/TitanOS-LICENSE.md"
+cp -a plugins/nvidia/root "$stage/usr/share/titanos/nvidia/integration-source"
 # The original kernel sources accompany every binary plugin, not only a link.
 cp -a "$root/usr/share/doc/nvidia-kernel-open-dkms" "$stage/usr/share/doc/"
 cp -a "$root/usr/share/common-licenses" "$stage/usr/share/"
 python3 scripts/nvidia-plugin-metadata.py "$stage" "$kernel" "$version"
 chmod -R go-w "$stage"
-scripts/make-plugin.sh nvidia "$driver-titanos-$version" "$stage" "$output"
+plugin_version=$driver-titanos-$version
+if [[ $revision != 0 ]]; then
+    plugin_version=$plugin_version-r$revision
+    python3 - "$stage/plugin.json" "$version" "$revision" <<'PYMETA'
+import json,sys
+from pathlib import Path
+p=Path(sys.argv[1]); data=json.loads(p.read_text()); data.update(titanos=sys.argv[2],revision=int(sys.argv[3])); p.write_text(json.dumps(data,indent=2)+"\n")
+PYMETA
+fi
+scripts/make-plugin.sh nvidia "$plugin_version" "$stage" "$output"
 tar -C "$stage/usr/share" -czf "$output/nvidia-licenses.tar.gz" doc common-licenses titanos/nvidia
 echo "Built NVIDIA $driver for TitanOS $version, kernel $kernel"

@@ -25,6 +25,8 @@ for package in lock["packages"]:
 (notices / "SOURCES.txt").write_text("\n".join(sources))
 manifest = {
     "title": "NVIDIA",
+    "driver": lock["driver"],
+    "toolkit": lock["toolkit"],
     "description": {
         "de": "Offene NVIDIA-Kernelmodule für Turing und neuer, CUDA, NVENC/NVDEC und GPU-Container. Echte Hardwaretests stehen noch aus.",
         "en": "Open NVIDIA kernel modules for Turing and newer, CUDA, NVENC/NVDEC and GPU containers. Physical hardware testing is still pending."
