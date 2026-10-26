@@ -35,12 +35,27 @@ rm -f "$work/root/plugin.json"
 mkdir -p "$work/root/usr/lib/extension-release.d"
 printf 'ID=titanos\nSYSEXT_LEVEL=1\n' > "$work/root/usr/lib/extension-release.d/extension-release.$name"
 
+extra='{}'
+[ -f "$source/plugin.json" ] && extra=$(cat "$source/plugin.json")
+
+# Kernel modules only load into the kernel they were built for. A plugin
+# that carries modules has to name that kernel, and only that one.
+python3 - "$work/root/usr/lib/modules" "$extra" <<'PY'
+import json, os, sys
+modules, extra = sys.argv[1:3]
+if os.path.isdir(modules):
+    kernels = sorted(os.listdir(modules))
+    kernel = json.loads(extra).get("kernel", "")
+    if not kernel:
+        sys.exit("the plugin carries kernel modules but plugin.json names no kernel")
+    if kernels != [kernel]:
+        sys.exit(f"modules for {', '.join(kernels) or 'no kernel'}, but plugin.json names {kernel}")
+PY
+
 mkdir -p "$out"
 rm -f "$out/$name.raw"
 mksquashfs "$work/root" "$out/$name.raw" -comp zstd -all-root -noappend -quiet -processors "${SQUASHFS_PROCESSORS:-2}"
 
-extra='{}'
-[ -f "$source/plugin.json" ] && extra=$(cat "$source/plugin.json")
 python3 - "$name" "$version" "$out/$name.raw" "$extra" > "$out/$name.plugin.json" <<'PY'
 import hashlib, json, os, sys
 name, version, image, extra = sys.argv[1:5]
