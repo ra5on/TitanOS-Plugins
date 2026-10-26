@@ -15,3 +15,7 @@ for firewall in iptables ip6tables; do
         "$firewall" -w 5 -I "$parent" 1 -j "$chain"
     done
 done
+# NetBird shares 100.64.0.0/10: its interface must stay ahead of ts-input.
+if [ -x /usr/libexec/titanos-netbird-firewall ]; then
+    /usr/libexec/titanos-netbird-firewall
+fi
