@@ -1,0 +1,17 @@
+[Unit]
+Description=TitanOS NetBird remote access
+After=network-online.target titanos-firewall-open.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# NB_STATE_DIR: private keys and state on the plugin data volume.
+EnvironmentFile=/run/titanos-netbird/runtime
+ExecStartPre=/usr/libexec/titanos-netbird-runtime apply
+ExecStart=/usr/bin/netbird service run --log-file console --log-level info
+ExecStopPost=/usr/libexec/titanos-netbird-runtime stop
+Restart=on-failure
+RestartSec=5
+UMask=0077
+TimeoutStartSec=30
+TimeoutStopSec=20
