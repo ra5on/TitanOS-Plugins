@@ -22,13 +22,6 @@
     }
   },
   "plugins": {
-    "tehuti-tn40": {
-      "kernel": [
-        {"dir": "drivers/net/ethernet/tehuti", "config": {"CONFIG_TEHUTI_TN40": "m", "CONFIG_TEHUTI": ""}}
-      ],
-      "built": ["tn40xx"],
-      "modules": ["tn40xx"]
-    },
     "wangxun-nic": {
       "kernel": [
         {"dir": "drivers/net/ethernet/wangxun", "config": {"CONFIG_LIBWX": "m", "CONFIG_NGBE": "m", "CONFIG_TXGBE": "m"}}
