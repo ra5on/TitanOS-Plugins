@@ -1,0 +1,51 @@
+{
+  "comment": "Driver plugins built by scripts/make-driver-plugins.py against the exact kernel of the image. Kernel drivers come unmodified from Debian's linux-source package of that kernel version; external sources and firmware are pinned by commit and SHA-256. Catalog descriptions and hardware rules: plugins/catalog/<name>.json.",
+  "external": {
+    "it87": {
+      "url": "https://github.com/frankcrawford/it87/archive/bd7a566c8a60fe0308d67e26761e16260368191a.tar.gz",
+      "repository": "https://github.com/frankcrawford/it87",
+      "commit": "bd7a566c8a60fe0308d67e26761e16260368191a",
+      "date": "2026-10-02",
+      "sha256": "41be5663d46dd79e2697c342987fb80c4a83cc9bd7dc441021c872ea21192ef9",
+      "license": "GPL-2.0-or-later",
+      "notices": ["COPYING"]
+    }
+  },
+  "firmware": {
+    "repository": "https://gitlab.com/kernel-firmware/linux-firmware",
+    "tag": "20261019",
+    "commit": "a2dcb924f0897368b0b4f305cbf9808cdda90ce0",
+    "files": {
+      "intel/qat/qat_4xxx.bin": {"sha256": "7dd16649b3e687d6d909b3c2cbbd44241b04dac4b1398645810e1cdc0137eb46", "install": "qat_4xxx.bin"},
+      "intel/qat/qat_4xxx_mmp.bin": {"sha256": "df9d88b8b453a228076ddd2eb1332045eca654854b3e1bf6cce0edac24854c7c", "install": "qat_4xxx_mmp.bin"},
+      "LICENSES/LICENCE.qat_firmware": {"sha256": "0bd9f7cae3cf72b12a63359a725ccbb76ddbd6831372695a9162144329800dd0"}
+    }
+  },
+  "plugins": {
+    "wangxun-nic": {
+      "kernel": [
+        {"dir": "drivers/net/ethernet/wangxun", "config": {"CONFIG_LIBWX": "m", "CONFIG_NGBE": "m", "CONFIG_TXGBE": "m"}}
+      ],
+      "built": ["libwx", "ngbe", "txgbe"],
+      "modules": ["ngbe", "txgbe"]
+    },
+    "intel-qat": {
+      "kernel": [
+        {"dir": "drivers/crypto/intel/qat/qat_4xxx", "config": {"CONFIG_CRYPTO_DEV_QAT_4XXX": "m"}, "include": "drivers/crypto/intel/qat/qat_common"},
+        {"dir": "drivers/crypto/intel/qat/qat_420xx", "config": {"CONFIG_CRYPTO_DEV_QAT_420XX": "m"}, "include": "drivers/crypto/intel/qat/qat_common"}
+      ],
+      "built": ["qat_4xxx", "qat_420xx"],
+      "modules": ["qat_4xxx", "qat_420xx"],
+      "firmware": ["intel/qat/qat_4xxx.bin", "intel/qat/qat_4xxx_mmp.bin"],
+      "notices": ["LICENSES/LICENCE.qat_firmware"]
+    },
+    "it87-extended": {
+      "external": "it87",
+      "files": ["it87.c", "compat.h"],
+      "built": ["it87"],
+      "modules": ["it87"],
+      "services": ["titanos-it87-extended.service"],
+      "root": "plugins/it87-extended/root"
+    }
+  }
+}
