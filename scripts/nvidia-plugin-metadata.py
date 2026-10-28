@@ -32,6 +32,7 @@ manifest = {
         "en": "Open NVIDIA kernel modules for Turing and newer, CUDA, NVENC/NVDEC and GPU containers. Physical hardware testing is still pending."
     },
     "kernel": kernel,
+    "upstream": {"version": lock["driver"]},
     "contains": {
         "de": ["Offene Kernelmodule (MIT/GPL-2.0)", "CUDA-, NVENC-/NVDEC-Bibliotheken und GSP-Firmware (NVIDIA-Lizenz)", "NVIDIA Container Toolkit (Apache-2.0), Docker via CDI", "Originale Lizenztexte und passende Kernelquellen als Release-Dateien"],
         "en": ["Open kernel modules (MIT/GPL-2.0)", "CUDA, NVENC/NVDEC libraries and GSP firmware (NVIDIA license)", "NVIDIA Container Toolkit (Apache-2.0), Docker via CDI", "Original license notices and matching kernel sources as release assets"]

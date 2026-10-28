@@ -68,7 +68,8 @@ def stage(root, base, destination, version):
     (destination / 'plugin.json').write_text(json.dumps({
         'title': 'Intel GPU Tools', 'description': {'de': 'Intel-GPU-Diagnosewerkzeuge aus Debian 13, einschließlich intel_gpu_top.', 'en': 'Intel GPU diagnostics from Debian 13, including intel_gpu_top.'},
         'contains': {'de': ['Intel GPU Tools und benötigte Zusatzbibliotheken', 'Originale Lizenzhinweise und genaue Debian-Quellpaketlinks'], 'en': ['Intel GPU Tools and required additional libraries', 'Original notices and exact Debian source package links']},
-        'modules': [], 'services': []
+        'modules': [], 'services': [],
+        'upstream': {'version': next(line.split()[1] for line in sources if line.startswith('intel-gpu-tools '))},
     }, indent=2) + '\n')
 
 if __name__ == '__main__':

@@ -37,6 +37,21 @@ printf 'ID=titanos\nSYSEXT_LEVEL=1\n' > "$work/root/usr/lib/extension-release.d/
 
 extra='{}'
 [ -f "$source/plugin.json" ] && extra=$(cat "$source/plugin.json")
+# The catalog description of an official plugin (category, details, hardware
+# rules; docs/PLUGINS.md) lies in plugins/catalog/<name>.json. What the build
+# wrote into plugin.json (versions, kernel, modules) takes precedence.
+catalog=$(dirname "$0")/../plugins/catalog/$name.json
+if [ -f "$catalog" ]; then
+    extra=$(python3 - "$catalog" "$extra" <<'PY'
+import json, sys
+def merge(base, over):
+    for key, value in over.items():
+        base[key] = merge(base[key], value) if isinstance(value, dict) and isinstance(base.get(key), dict) else value
+    return base
+print(json.dumps(merge(json.load(open(sys.argv[1])), json.loads(sys.argv[2])), ensure_ascii=False))
+PY
+)
+fi
 
 # Kernel modules only load into the kernel they were built for. A plugin
 # that carries modules has to name that kernel, and only that one.

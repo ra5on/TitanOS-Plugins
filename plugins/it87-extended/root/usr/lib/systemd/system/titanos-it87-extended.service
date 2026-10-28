@@ -1,0 +1,8 @@
+[Unit]
+Description=TitanOS it87-extended: sensors driver of the plugin
+Documentation=https://github.com/ra5on/TitanOS/blob/main/docs/PLUGINS.md
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/titanos/it87-extended
