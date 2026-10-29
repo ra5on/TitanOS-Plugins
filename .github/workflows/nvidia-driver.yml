@@ -1,9 +1,10 @@
 name: NVIDIA driver updates
 
-# Builds a newer NVIDIA driver for kernel sets and appends it to their
-# release: nvidia-update-<sha256>.* plus the signed list nvidia-updates.json.
-# The set's plugins, its index and the catalog stay unchanged. TitanOS offers
-# the update under Plugins › NVIDIA (docs/NVIDIA.md in TitanOS).
+# Builds a newer NVIDIA driver for kernel sets and leaves it as a draft
+# release. ra5on/TitanOS signs it and appends it to the kernel set:
+# nvidia-update-<sha256>.* plus the signed list nvidia-updates.json. The set's
+# plugins, its index and the catalog stay unchanged. TitanOS offers the update
+# under Plugins › NVIDIA (docs/NVIDIA.md in TitanOS).
 
 on:
   workflow_dispatch:
@@ -108,7 +109,7 @@ jobs:
           path: out/driver-release/
           if-no-files-found: error
 
-  publish:
+  draft:
     needs: [targets, build]
     # One failed leg must not hold back the drivers that built and validated.
     if: ${{ !cancelled() && needs.targets.outputs.tags != '[]' }}
@@ -118,14 +119,14 @@ jobs:
       matrix:
         tag: ${{ fromJSON(needs.targets.outputs.tags) }}
     runs-on: ubuntu-24.04
-    environment: release
+    # Signed by ra5on/TitanOS (plugin-sign.yml there), which appends the
+    # driver to the kernel set and replaces its nvidia-updates.json.
     permissions:
       contents: write
       actions: read
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v7
       - name: Is there a driver for this set
         id: artifact
         env:
@@ -138,23 +139,11 @@ jobs:
         with:
           name: driver-${{ matrix.tag }}
           path: driver-release
-      - name: Sign the driver and the updated list
-        if: steps.artifact.outputs.exists == 'true'
-        env:
-          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
-          MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends minisign
-          key=$(mktemp)
-          trap 'rm -f "$key"' EXIT
-          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
-          python3 scripts/nvidia-update-release.py sign driver-release "$key"
-          python3 scripts/nvidia-update-release.py verify driver-release
-      - name: Append immutable driver assets, then replace only the signed list
+      - name: Draft release with the unsigned driver
         if: steps.artifact.outputs.exists == 'true'
         env:
           TAG: ${{ matrix.tag }}
         run: |
-          gh release upload "$TAG" driver-release/nvidia-update-*
-          gh release upload "$TAG" driver-release/nvidia-updates.json driver-release/nvidia-updates.json.minisig --clobber
+          # target.json names the kernel set; the draft is deleted once signed.
+          gh release create "pending-nvidia-$GITHUB_RUN_NUMBER-$TAG" driver-release/* --repo "$GITHUB_REPOSITORY" --draft \
+            --title "NVIDIA driver for $TAG (waiting to be signed)" --notes "Signed and appended to $TAG by ra5on/TitanOS."

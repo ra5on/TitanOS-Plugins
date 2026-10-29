@@ -1,16 +1,14 @@
 # Plugin-Sätze veröffentlichen
 
-## Einmalig durch den Projektinhaber
+## Signieren
 
-1. Environment `release` anlegen: Freigabe durch `ra5on`, Deployment nur von
-   `main`.
-2. Dort `MINISIGN_SECRET_KEY` (Inhalt der geheimen Schlüsseldatei von
-   `titanos-release-1`) und `MINISIGN_PASSWORD` hinterlegen, wie in
-   `docs/RELEASING.md` von TitanOS. Ohne diese Schlüssel lehnt TitanOS jeden
-   Satz ab.
-3. Für den Anstoß aus TitanOS einen Fine-grained-Token nur für dieses Repository
-   (Recht „Contents: read and write“) als `PLUGINS_DISPATCH_TOKEN` im
-   Environment `release` von **TitanOS** hinterlegen.
+Dieses Repository hat **keinen** Signaturschlüssel. Getestete Sätze und
+Treiberupdates werden hier nur als Entwurf (unveröffentlichte Release)
+angelegt. `ra5on/TitanOS` signiert sie mit `.github/workflows/plugin-sign.yml`
+in seinem Environment `release` nach Freigabe durch `ra5on`, veröffentlicht sie
+und aktualisiert `catalog.json` (Serial + 1). Dafür braucht TitanOS das
+Repository-Secret `PLUGINS_DISPATCH_TOKEN` (Fine-grained-Token nur für dieses
+Repository, Contents: read and write); damit stößt es hier auch Bauten an.
 
 ## Abläufe (`.github/workflows/release.yml`)
 
@@ -28,11 +26,12 @@
 - **Von Hand:** Release, Sätze und erzwungener Neubau wählbar.
 
 Jeder Lauf baut alle Plugins, packt sie wie TitanOS in ein Release und bootet es
-in QEMU (`test-sets`). Erst danach signiert der Job `publish` nach Freigabe, legt
-die Releases an und aktualisiert `catalog.json` (Serial + 1). Schlägt etwas fehl,
-bleibt der Zeiger unverändert.
+in QEMU (`test-sets`). Erst danach legt der Job `draft` die Sätze als Entwurf an.
+Schlägt etwas fehl, entsteht kein Entwurf und der Zeiger bleibt unverändert.
 
 ## NVIDIA-Treiberupdates
 
 `nvidia-driver.yml` von Hand starten (Treiber `latest` oder eine Version, ein
-Kernel-Satz oder die neuesten drei). Signiert wird wieder erst nach Freigabe.
+Kernel-Satz oder die neuesten drei). Das Ergebnis wird ein Entwurf
+`pending-nvidia-<lauf>-<satz>`; TitanOS signiert ihn nach Freigabe und hängt ihn
+an den Kernel-Satz.

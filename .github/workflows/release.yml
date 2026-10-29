@@ -11,9 +11,10 @@ name: Release
 # - Manually, for a chosen TitanOS release.
 #
 # Every plugin is built and booted with the image, also those that are not
-# published this time. Signing needs the approval of the environment
-# "release", which alone holds the key. Releases are never marked latest:
-# TitanOS finds sets only through the signed catalog.
+# published this time. The tested sets become draft releases; ra5on/TitanOS
+# signs them in its environment "release" (which holds the key) after the
+# owner's approval, publishes them and updates the catalog. Releases are
+# never marked latest: TitanOS finds sets only through the signed catalog.
 
 on:
   repository_dispatch:
@@ -177,57 +178,36 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  publish:
-    name: Sign and publish
+  draft:
+    name: Hand the sets over for signing
     needs: build
     if: needs.build.outputs.kernel != '' || needs.build.outputs.common != ''
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    # The environment asks for an approval and holds the signing key.
-    environment: release
+    # Signing happens in ra5on/TitanOS, whose environment "release" holds the
+    # key (.github/workflows/plugin-sign.yml there). This job only leaves
+    # each tested set as an unpublished draft release; TitanOS signs it after
+    # the owner's approval, publishes it and updates the catalog.
     permissions:
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v7
         with:
           name: sets
           path: sets
-      - name: Sign, publish the sets, then point the catalog to them
+      - name: Draft releases with the unsigned sets
         env:
-          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
-          MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
           KERNEL_TAG: ${{ needs.build.outputs.kernel }}
           COMMON_TAG: ${{ needs.build.outputs.common }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends minisign
-          if [ -z "$MINISIGN_SECRET_KEY" ]; then
-            echo "the environment 'release' holds no MINISIGN_SECRET_KEY" >&2
-            exit 1
-          fi
-          key=$(mktemp)
-          trap 'rm -f "$key"' EXIT
-          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
           for pair in "kernel:$KERNEL_TAG" "common:$COMMON_TAG"; do
             set=${pair%%:*} tag=${pair#*:}
             [ -n "$tag" ] || continue
+            # The disposable test signatures never leave this run.
             rm -f sets/$set/*.minisig
-            python3 scripts/sets.py sign "sets/$set" "$key"
-            # Only a signature TitanOS accepts may be published.
-            python3 scripts/sets.py verify "sets/$set"
-            gh release create "$tag" sets/$set/* --title "$tag" --latest=false \
-              --notes "Plugin set $tag, built and tested with the image of TitanOS $VERSION. License: FSL-1.1-ALv2 for the TitanOS integration; third-party licenses in the *-licenses.tar.gz archives, sources in *-sources.tar.gz."
-            current=-
-            rm -rf catalog-current catalog-new
-            if gh release download catalog -p 'catalog.json*' -D catalog-current; then current=catalog-current; fi
-            python3 scripts/sets.py pointer "sets/$set" "$current" catalog-new "$key"
-            if ! gh release view catalog >/dev/null 2>&1; then
-              gh release create catalog --title "Plugin catalog" --latest=false \
-                --notes "Signed pointer to the current plugin sets (catalog.json). TitanOS reads it; see docs/PLUGIN-REPO.md in ra5on/TitanOS."
-            fi
-            gh release upload catalog catalog-new/catalog.json catalog-new/catalog.json.minisig --clobber
+            gh release create "$tag" sets/$set/* --repo "$GITHUB_REPOSITORY" --draft --title "$tag" --target "$GITHUB_SHA" \
+              --notes "Plugin set $tag, built and tested with the image of TitanOS $VERSION. Waiting to be signed by ra5on/TitanOS. License: FSL-1.1-ALv2 for the TitanOS integration; third-party licenses in the *-licenses.tar.gz archives, sources in *-sources.tar.gz."
           done

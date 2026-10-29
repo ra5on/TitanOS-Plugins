@@ -18,7 +18,8 @@ Jede Veröffentlichung ist ein **Satz**, also eine GitHub-Release mit festem Tag
 
 Die feste Release `catalog` enthält den signierten Zeiger `catalog.json` auf die
 aktuellen Sätze. Releases werden nie als „latest“ markiert. Signiert ist alles
-mit denselben Schlüsseln wie TitanOS (`keys/`).
+mit denselben Schlüsseln wie TitanOS (`keys/`); das Signieren geschieht in
+`ra5on/TitanOS` ([RELEASING.md](RELEASING.md)).
 
 NVIDIA-Treiberupdates (`nvidia-driver.yml`) hängen an den Kernel-Sätzen; der
 Satz selbst und der Zeiger bleiben dabei unverändert.
