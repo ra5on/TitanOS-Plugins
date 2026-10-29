@@ -169,7 +169,8 @@ def main():
     for name, plugin in spec["plugins"].items():
         if only and name not in only:
             continue
-        catalog = json.loads(Path(f"plugins/catalog/{name}.json").read_text())
+        # The catalog entries live in TitanOS; the image recommends drivers with them.
+        catalog = json.loads((Path(os.environ["TITANOS"]) / "plugins/catalog" / f"{name}.json").read_text())
         stage = work / "stage" / name
         shutil.rmtree(stage, ignore_errors=True)
         modules_dir = stage / f"usr/lib/modules/{kernel}/updates/titanos-{name}"
@@ -242,7 +243,7 @@ def main():
             shutil.copyfile(path, modules_dir / f"{module}.ko")
         rules = {rule["modalias"] for rule in catalog.get("hardware", [])}
         if rules != aliases:
-            fail(f"{name}: plugins/catalog/{name}.json hardware rules differ from the module aliases "
+            fail(f"{name}: $TITANOS/plugins/catalog/{name}.json hardware rules differ from the module aliases "
                  f"(missing {sorted(aliases - rules)}, extra {sorted(rules - aliases)})")
 
         firmware = spec.get("firmware", {})
