@@ -38,10 +38,12 @@ printf 'ID=titanos\nSYSEXT_LEVEL=1\n' > "$work/root/usr/lib/extension-release.d/
 extra='{}'
 [ -f "$source/plugin.json" ] && extra=$(cat "$source/plugin.json")
 # The catalog description of an official plugin (category, details, hardware
-# rules; docs/PLUGINS.md) lies in plugins/catalog/<name>.json. What the build
-# wrote into plugin.json (versions, kernel, modules) takes precedence.
-catalog=$(dirname "$0")/../plugins/catalog/$name.json
-if [ -f "$catalog" ]; then
+# rules; docs/PLUGINS.md in TitanOS) lies in plugins/catalog/<name>.json of the
+# TitanOS checkout named by $TITANOS; the image carries the same table. What
+# the build wrote into plugin.json (versions, kernel, modules) takes precedence.
+catalog=
+[ -n "${TITANOS:-}" ] && catalog=$TITANOS/plugins/catalog/$name.json
+if [ -n "$catalog" ] && [ -f "$catalog" ]; then
     extra=$(python3 - "$catalog" "$extra" <<'PY'
 import json, sys
 def merge(base, over):

@@ -11,7 +11,11 @@ work.mkdir(exist_ok=True);(work/'tmp').mkdir(exist_ok=True);os.environ['TMPDIR']
 def module(name,file):
     spec=importlib.util.spec_from_file_location(name,recipe/'scripts'/file);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
 updater=module('updater','update-nvidia-lock.py');fetcher=module('fetcher','fetch-nvidia.py')
-target=json.loads((recipe/'target.json').read_text());kernel=target['kernel'];version=target['version'];lockpath=work/'packages.lock.json'
+target=json.loads((recipe/'target.json').read_text());kernel=target['kernel'];lockpath=work/'packages.lock.json'
+# titand names the release it builds for: the SDK may stem from a plugin set
+# made for an earlier release with the same kernel.
+version=os.environ.get('TITANOS_VERSION') or target['version']
+if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?',version):raise ValueError('invalid TitanOS version')
 base=json.loads((lockpath if lockpath.exists() else recipe/'plugins/nvidia/packages.lock.json').read_text())
 def status(lock):
     (work/'source-status.json').write_text(json.dumps({'driver':lock['driver'],'toolkit':lock['toolkit'],'kernel':kernel,'version':version,'downloaded':True})+'\n')

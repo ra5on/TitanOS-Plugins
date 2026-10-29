@@ -1,0 +1,160 @@
+name: NVIDIA driver updates
+
+# Builds a newer NVIDIA driver for kernel sets and appends it to their
+# release: nvidia-update-<sha256>.* plus the signed list nvidia-updates.json.
+# The set's plugins, its index and the catalog stay unchanged. TitanOS offers
+# the update under Plugins › NVIDIA (docs/NVIDIA.md in TitanOS).
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Kernel set, e.g. kernel-6.12.113-1-1; empty = the newest three in the catalog'
+        default: ''
+      driver:
+        description: 'NVIDIA version from the signed Debian archive, or latest'
+        default: latest
+      force:
+        description: 'Rebuild even when upstream packages have not changed'
+        type: boolean
+        default: false
+
+concurrency:
+  group: plugin-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    runs-on: ubuntu-24.04
+    outputs:
+      tags: ${{ steps.targets.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Kernel sets of the signed catalog
+        id: targets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED: ${{ inputs.tag }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends minisign
+          gh release download catalog -p 'catalog.json*' -D catalog
+          minisign -V -q -p keys/titanos-release-1.pub -m catalog/catalog.json || minisign -V -q -p keys/titanos-recovery-1.pub -m catalog/catalog.json
+          if [ -n "$REQUESTED" ]; then
+            tags=$(jq -c --arg t "$REQUESTED" '[.kernels[] | select(.tag == $t) | .tag]' catalog/catalog.json)
+            [ "$tags" != '[]' ] || { echo "$REQUESTED is not in the catalog" >&2; exit 1; }
+          else
+            tags=$(jq -c '[.kernels[-3:][] | .tag]' catalog/catalog.json)
+          fi
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: targets
+    if: needs.targets.outputs.tags != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJSON(needs.targets.outputs.tags) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TITANOS: ${{ github.workspace }}/titanos
+    steps:
+      - uses: actions/checkout@v7
+      # The catalog descriptions (plugins/catalog) and the pinned mkosi.
+      - uses: actions/checkout@v7
+        with:
+          repository: ra5on/TitanOS
+          path: titanos
+      - name: Build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends debian-archive-keyring gnupg gpgv minisign squashfs-tools systemd-container python3-venv kmod
+          lock=titanos/scripts/dev-toolchains.lock.json
+          python3 -m venv "$RUNNER_TEMP/mkosi"
+          "$RUNNER_TEMP/mkosi/bin/pip" install "git+$(jq -er .mkosi.source "$lock")@$(jq -er .mkosi.commit "$lock")"
+          echo "$RUNNER_TEMP/mkosi/bin" >> "$GITHUB_PATH"
+      - name: Authenticate upstream packages and the kernel set
+        id: check
+        env:
+          DRIVER: ${{ inputs.driver || 'latest' }}
+          TAG: ${{ matrix.tag }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          python3 scripts/update-nvidia-lock.py --driver "$DRIVER" --output out/nvidia-lock.json
+          force=
+          if [ "$FORCE" = true ] || [ "$DRIVER" != latest ]; then force=--force; fi
+          python3 scripts/nvidia-update-release.py prepare "$TAG" out/nvidia-lock.json out/nvidia-target.json $force
+          echo "needed=$(jq -r .needed out/nvidia-target.json)" >> "$GITHUB_OUTPUT"
+      - name: Build matching open kernel modules and plugin
+        if: steps.check.outputs.needed == 'true'
+        env:
+          TAG: ${{ matrix.tag }}
+        run: |
+          cp out/nvidia-lock.json plugins/nvidia/packages.lock.json
+          kernel=$(jq -r .kernel out/nvidia-target.json)
+          sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$TAG" NVIDIA_KERNEL="$kernel" NVIDIA_REVISION="$GITHUB_RUN_NUMBER" scripts/make-nvidia-plugin.sh "${TAG##*-}"
+          sudo chown -R "$(id -u):$(id -g)" out
+          python3 scripts/nvidia-update-release.py pack out/nvidia-target.json out/plugins out/driver-release
+      - name: Validate image metadata and module compatibility
+        if: steps.check.outputs.needed == 'true'
+        run: python3 scripts/test-nvidia-update-image.py out/driver-release
+      - uses: actions/upload-artifact@v7
+        if: steps.check.outputs.needed == 'true'
+        with:
+          name: driver-${{ matrix.tag }}
+          path: out/driver-release/
+          if-no-files-found: error
+
+  publish:
+    needs: [targets, build]
+    # One failed leg must not hold back the drivers that built and validated.
+    if: ${{ !cancelled() && needs.targets.outputs.tags != '[]' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        tag: ${{ fromJSON(needs.targets.outputs.tags) }}
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Is there a driver for this set
+        id: artifact
+        env:
+          TAG: ${{ matrix.tag }}
+        run: |
+          exists=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" --jq ".artifacts | any(.name == \"driver-$TAG\")")
+          echo "exists=$exists" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v7
+        if: steps.artifact.outputs.exists == 'true'
+        with:
+          name: driver-${{ matrix.tag }}
+          path: driver-release
+      - name: Sign the driver and the updated list
+        if: steps.artifact.outputs.exists == 'true'
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+          MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
+          python3 scripts/nvidia-update-release.py sign driver-release "$key"
+          python3 scripts/nvidia-update-release.py verify driver-release
+      - name: Append immutable driver assets, then replace only the signed list
+        if: steps.artifact.outputs.exists == 'true'
+        env:
+          TAG: ${{ matrix.tag }}
+        run: |
+          gh release upload "$TAG" driver-release/nvidia-update-*
+          gh release upload "$TAG" driver-release/nvidia-updates.json driver-release/nvidia-updates.json.minisig --clobber

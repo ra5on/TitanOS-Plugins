@@ -40,12 +40,12 @@ class DriverPublicationTest(unittest.TestCase):
             key=keys/'test.key'
             subprocess.run(['minisign','-G','-W','-s',str(key),'-p',str(keys/'test.pub')],check=True,capture_output=True)
             image=b'compiled exact-kernel driver';checksum=hashlib.sha256(image).hexdigest()
-            p=dict(name='nvidia',version='2-titanos-1.0.0-r2',driver='2.0',toolkit='1.0',titanos='1.0.0',kernel='test-kernel',revision=2,sha256=checksum,size=len(image))
+            p=dict(name='nvidia',version='2.0-1-r2',driver='2.0',toolkit='1.0',kernel='test-kernel',revision=2,sha256=checksum,size=len(image))
             (source/'nvidia.raw').write_bytes(image);(source/'nvidia.plugin.json').write_text(json.dumps(p))
             for name in ('licenses','kernel-sources'): (source/('nvidia-'+name+'.tar.gz')).write_bytes(b'archive '+name.encode())
-            target=root/'target.json';target.write_text(json.dumps(dict(version='1.0.0',kernel='test-kernel',packageSet='a'*64)))
+            target=root/'target.json';target.write_text(json.dumps(dict(tag='kernel-6.12.0-1-1',kernel='test-kernel',kernelPackage='6.12.0-1',packageSet='a'*64)))
             release.pack(target,source,out)
-            previous=dict(titanos='1.0.0',kernel='test-kernel',versions=[dict(version='newer-upstream',driver='3.0',toolkit='1.0',sha256='b'*64,revision=1,size=40)],recommended='b'*64)
+            previous=dict(titanos='',kernel='test-kernel',kernelPackage='6.12.0-1',versions=[dict(version='newer-upstream',driver='3.0',toolkit='1.0',sha256='b'*64,revision=1,size=40)],recommended='b'*64)
             with patch.object(release,'channel',return_value=previous),patch.object(release,'verify',side_effect=lambda p:verify_with_keys(p,keys)):
                 release.sign_channel(out,key)
             menu=json.loads((out/'nvidia-updates.json').read_text())

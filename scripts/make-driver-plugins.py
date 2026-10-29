@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the driver plugins (plugins/drivers/drivers.json) for the exact image kernel.
 
-Usage (as root, after make-zip.sh): make-driver-plugins.py <TitanOS version> [name ...]
+Usage (as root, with the TitanOS image built in $TITANOS): make-driver-plugins.py <set revision> [name ...]
 
 Kernel drivers are compiled from Debian's linux-source package of exactly
 the version of the image's linux-image package, against the matching
@@ -116,11 +116,14 @@ def modinfo(root, path):
 
 
 def main():
-    if len(sys.argv) < 2 or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?", sys.argv[1]):
-        fail("usage: make-driver-plugins.py <TitanOS version> [name ...]")
+    if len(sys.argv) < 2 or not re.fullmatch(r"0|[1-9][0-9]{0,5}", sys.argv[1]):
+        fail("usage: make-driver-plugins.py <set revision> [name ...]")
+    if not os.environ.get("TITANOS"):
+        fail("TITANOS must name the TitanOS checkout with the built image")
     if os.geteuid() != 0:
         fail("run in an isolated root/user namespace or with sudo")
-    version, only = sys.argv[1], set(sys.argv[2:])
+    revision, only = sys.argv[1], set(sys.argv[2:])
+    label = os.environ.get("SET_TAG", "test")
     os.chdir(REPO)
     global EPOCH
     EPOCH = epoch()
@@ -129,7 +132,7 @@ def main():
     unknown = only - set(spec["plugins"])
     if unknown:
         fail("unknown plugins: " + ", ".join(sorted(unknown)))
-    kernel, package_version = image_kernel(Path(os.environ.get("IMAGE", "build/mkosi.output")))
+    kernel, package_version = image_kernel(Path(os.environ.get("IMAGE", os.path.join(os.environ["TITANOS"], "build/mkosi.output"))))
     upstream = kernel.split("+")[0]                      # 6.12.113
     series = ".".join(upstream.split(".")[:2])           # 6.12
     work = Path("out/driver-build").resolve()
@@ -260,7 +263,7 @@ def main():
         shutil.copyfile("LICENSE.md", notices / "TitanOS-LICENSE.md")
         shutil.copytree(root / "usr/share/common-licenses", stage / "usr/share/common-licenses", dirs_exist_ok=True)
         (notices / "SOURCES.txt").write_text(
-            f"TitanOS {version} plugin {name} for kernel {kernel} (linux-image {package_version})\n\n"
+            f"TitanOS plugin {name} ({label}) for kernel {kernel} (linux-image {package_version})\n\n"
             + "\n".join(source_links) + "\n")
         if "external" in plugin:
             pinned = spec["external"][plugin["external"]]["commit"][:12]
@@ -270,13 +273,13 @@ def main():
                     "upstream": {"version": pinned}, "sources": source_links}
         (stage / "plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
         subprocess.run(["chmod", "-R", "go-w", str(stage)], check=True)
-        subprocess.run(["scripts/make-plugin.sh", name, version, str(stage), str(output)], check=True)
+        subprocess.run(["scripts/make-plugin.sh", name, f"{upstream}-{revision}", str(stage), str(output)], check=True)
         shutil.copyfile(sources_path, output / f"{name}-sources.tar.gz")
         with DeterministicTar(output / f"{name}-licenses.tar.gz") as archive:
             archive.add(notices, arcname=f"titanos/{name}", filter=normalized)
             archive.add(stage / "usr/share/common-licenses", arcname="common-licenses", filter=normalized)
         built_plugins.append(name)
-    print(f"Built {', '.join(built_plugins)} for TitanOS {version}, kernel {kernel} (linux-image {package_version})")
+    print(f"Built {', '.join(built_plugins)} ({label}) for kernel {kernel} (linux-image {package_version})")
 
 
 if __name__ == "__main__":

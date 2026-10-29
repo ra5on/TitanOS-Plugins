@@ -1,0 +1,29 @@
+name: TitanOS image
+description: >-
+  Builds the TitanOS image of the checkout at the workspace root, with a
+  disposable signing key it also trusts. The plugins are built against it.
+
+inputs:
+  version:
+    description: TitanOS version the image is built as
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # The composite action of the TitanOS checkout: toolchains, mkosi, QEMU.
+    - uses: ./.github/actions/image-tools
+
+    - name: Disposable signing key
+      shell: bash
+      run: minisign -G -W -p build/mkosi.extra/usr/share/titanos/update-keys/rehearsal.pub -s "$RUNNER_TEMP/rehearsal.key"
+
+    - name: Build titand and the image
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      # As root mkosi needs no user namespace, which the runner restricts.
+      run: |
+        make build VERSION="$VERSION"
+        VERSION="$VERSION" MKOSI_SUDO=1 scripts/make-zip.sh
+        sudo chown -R "$(id -u):$(id -g)" out build/mkosi.output

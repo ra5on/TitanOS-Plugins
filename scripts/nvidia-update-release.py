@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Build/publish an independent NVIDIA channel without replacing OS assets."""
+"""Build/publish independent NVIDIA driver updates for a kernel set.
+
+The updates are appended to the kernel set release; its plugins, index and
+the catalog pointer stay unchanged. Only nvidia-updates.json is replaced."""
 import argparse
 import datetime
 import hashlib
@@ -14,9 +17,9 @@ import urllib.request
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-KEYS=ROOT/'build/mkosi.extra/usr/share/titanos/update-keys'
-REPO='https://github.com/ra5on/TitanOS/releases/download/'
-VERSION=re.compile(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[a-z0-9.]+)?')
+KEYS=ROOT/'keys'
+REPO=os.environ.get('PLUGIN_RELEASES','https://github.com/ra5on/TitanOS-Plugins/releases/download/')
+TAG=re.compile(r'kernel-[0-9][0-9A-Za-z._~-]*-[1-9][0-9]*')
 HASH=re.compile('[0-9a-f]{64}')
 
 def digest(path):
@@ -39,18 +42,18 @@ def fetch(base,name,limit=65536,optional=False):
     if len(data)>limit: raise ValueError('metadata too large')
     return data
 
-def signed(base,name,optional=False):
-    data=fetch(base,name,optional=optional)
+def signed(base,name,optional=False,limit=65536):
+    data=fetch(base,name,limit,optional=optional)
     if data is None: return None
     sig=fetch(base,name+'.minisig',4096)
     with tempfile.TemporaryDirectory() as tmp:
         path=Path(tmp)/name;path.write_bytes(data);path.with_name(name+'.minisig').write_bytes(sig);verify(path)
     return json.loads(data)
 
-def channel(base,version,kernel):
+def channel(base,kernel,package):
     data=signed(base,'nvidia-updates.json',True)
-    if data is None: return dict(titanos=version,kernel=kernel,versions=[])
-    if data.get('titanos')!=version or data.get('kernel')!=kernel or len(data.get('versions',[]))>32: raise ValueError('wrong driver channel')
+    if data is None: return dict(titanos='',kernel=kernel,kernelPackage=package,versions=[])
+    if data.get('titanos')!='' or data.get('kernel')!=kernel or data.get('kernelPackage')!=package or len(data.get('versions',[]))>32: raise ValueError('wrong driver channel')
     seen,revisions=set(),set()
     for item in data['versions']:
         if not HASH.fullmatch(item['sha256']) or item['sha256'] in seen or type(item['revision']) is not int or item['revision']<1 or item['revision'] in revisions:
@@ -58,26 +61,26 @@ def channel(base,version,kernel):
         seen.add(item['sha256']);revisions.add(item['revision'])
     return data
 
-def prepare(version,lock,output,force=False):
-    if not VERSION.fullmatch(version): raise ValueError('invalid TitanOS version')
-    base=REPO+'v'+version+'/'
-    os_manifest=signed(base,'manifest.json')
-    kernel=os_manifest['kernel']
-    if os_manifest['version']!=version or os_manifest['tag']!='v'+version or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9.+_-]{0,100}',kernel): raise ValueError('wrong OS identity')
+def prepare(tag,lock,output,force=False):
+    if not TAG.fullmatch(tag): raise ValueError('invalid kernel set')
+    base=REPO+tag+'/'
+    index=signed(base,'index.json',limit=262144)
+    kernel,package=index.get('kernel',''),index.get('kernelPackage','')
+    if index.get('tag')!=tag or not package or not re.fullmatch('[A-Za-z0-9][A-Za-z0-9.+_-]{0,100}',kernel): raise ValueError('wrong kernel set identity')
     package_set=hashlib.sha256(json.dumps(json.loads(lock.read_text()),sort_keys=True).encode()).hexdigest()
-    previous=channel(base,version,kernel)
+    previous=channel(base,kernel,package)
     needed=True
     if previous['versions']:
         latest=next(v for v in previous['versions'] if v['sha256']==previous['recommended'])
         p=signed(base,'nvidia-update-'+latest['sha256']+'.plugin.json')
         needed=p.get('packageSet')!=package_set
-    result=dict(version=version,kernel=kernel,packageSet=package_set,needed=needed or force)
+    result=dict(tag=tag,kernel=kernel,kernelPackage=package,packageSet=package_set,needed=needed or force)
     output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(result,indent=2)+'\n')
     return result
 
 def pack(target,source,destination):
     metadata=json.loads(target.read_text());manifest=json.loads((source/'nvidia.plugin.json').read_text())
-    if manifest.get('titanos')!=metadata['version'] or manifest['kernel']!=metadata['kernel'] or manifest.get('revision',0)<1: raise ValueError('plugin targets another OS/kernel')
+    if manifest.get('titanos') or manifest['kernel']!=metadata['kernel'] or manifest.get('revision',0)<1: raise ValueError('plugin targets another OS/kernel')
     raw=source/'nvidia.raw'
     if digest(raw)!=manifest['sha256'] or raw.stat().st_size!=manifest['size']: raise ValueError('plugin image integrity')
     destination.mkdir(parents=True,exist_ok=True)
@@ -95,6 +98,8 @@ def pack(target,source,destination):
         shutil.copyfile(path,destination/asset)
         manifest['archives'][asset]=dict(sha256=digest(path),size=path.stat().st_size)
     (destination/(prefix+'.plugin.json')).write_text(json.dumps(manifest,indent=2)+'\n')
+    # The kernel set the update belongs to, for signing; never uploaded.
+    shutil.copyfile(target,destination/'target.json')
     return manifest
 
 def sign(path,key):
@@ -106,10 +111,10 @@ def sign_channel(directory,key):
     manifests=list(directory.glob('nvidia-update-*.plugin.json'))
     if len(manifests)!=1: raise ValueError('expected exactly one new plugin')
     path=manifests[0];p=json.loads(path.read_text())
-    version,kernel=p['titanos'],p['kernel']
-    if not VERSION.fullmatch(version): raise ValueError('invalid target')
+    target=json.loads((directory/'target.json').read_text())
+    if not TAG.fullmatch(target['tag']) or p['kernel']!=target['kernel'] or p.get('titanos'): raise ValueError('invalid target')
     verify_package(directory,p)
-    previous=channel(REPO+'v'+version+'/',version,kernel)
+    previous=channel(REPO+target['tag']+'/',target['kernel'],target['kernelPackage'])
     if any(v['revision']>=p['revision'] for v in previous['versions']): raise ValueError('revision must increase; start a new workflow run')
     sign(path,key)
     previous['versions'].append({k:p[k] for k in ('version','sha256','revision','size','driver','toolkit')})
@@ -130,7 +135,7 @@ def verify_package(directory,p):
         if digest(directory/name)!=info['sha256'] or (directory/name).stat().st_size!=info['size']: raise ValueError('archive checksum mismatch')
 
 def verify_directory(directory,keys=KEYS):
-    """Return the individually authenticated additional assets of an OS release."""
+    """Return the individually authenticated driver update assets of a kernel set."""
     assets=set()
     index=directory/'nvidia-updates.json'
     if index.exists():
@@ -144,7 +149,7 @@ def verify_directory(directory,keys=KEYS):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='command',required=True)
-    p=sub.add_parser('prepare');p.add_argument('version');p.add_argument('lock',type=Path);p.add_argument('output',type=Path);p.add_argument('--force',action='store_true')
+    p=sub.add_parser('prepare');p.add_argument('tag');p.add_argument('lock',type=Path);p.add_argument('output',type=Path);p.add_argument('--force',action='store_true')
     p=sub.add_parser('pack');p.add_argument('target',type=Path);p.add_argument('source',type=Path);p.add_argument('output',type=Path)
     p=sub.add_parser('sign');p.add_argument('directory',type=Path);p.add_argument('key',type=Path)
     p=sub.add_parser('verify');p.add_argument('directory',type=Path)

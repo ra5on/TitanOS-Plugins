@@ -1,0 +1,233 @@
+name: Release
+
+# Builds, tests and publishes plugin sets (docs/PLUGIN-REPO.md in TitanOS):
+#
+# - repository_dispatch "titanos-release" from the release workflow of a
+#   full TitanOS release: the kernel set for its kernel, if the catalog has
+#   none, and the common set if there is none yet.
+# - A push to main that changes a kernel-independent plugin: a new common set
+#   against the newest TitanOS release. Plugins whose inputs did not change
+#   keep their previous build and version.
+# - Manually, for a chosen TitanOS release.
+#
+# Every plugin is built and booted with the image, also those that are not
+# published this time. Signing needs the approval of the environment
+# "release", which alone holds the key. Releases are never marked latest:
+# TitanOS finds sets only through the signed catalog.
+
+on:
+  repository_dispatch:
+    types: [titanos-release]
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/tailscale/**'
+      - 'plugins/netbird/**'
+      - 'plugins/coral/**'
+      - 'plugins/intel-gpu-tools/**'
+      - 'scripts/make-tools-plugins.sh'
+      - 'scripts/tools-plugin-stage.py'
+      - 'scripts/make-tailscale-plugin.py'
+      - 'scripts/make-netbird-plugin.py'
+      - 'scripts/make-plugin.sh'
+  workflow_dispatch:
+    inputs:
+      titanos:
+        description: 'TitanOS version (without v) to build for; empty = newest release'
+        default: ''
+      sets:
+        description: 'Sets to publish'
+        type: choice
+        options: [both, common, kernel]
+        default: both
+      force:
+        description: 'Rebuild kernel-independent plugins although their inputs did not change'
+        type: boolean
+        default: false
+
+concurrency:
+  group: plugin-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test the sets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    outputs:
+      kernel: ${{ steps.plan.outputs.kernel }}
+      common: ${{ steps.publish.outputs.common }}
+      version: ${{ steps.target.outputs.version }}
+    env:
+      TITANOS: ${{ github.workspace }}
+      PLUGINS: ${{ github.workspace }}/plugins-repo
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: TitanOS release to build for
+        id: target
+        env:
+          EVENT_VERSION: ${{ github.event.client_payload.version }}
+          EVENT_REF: ${{ github.event.client_payload.ref }}
+          INPUT_VERSION: ${{ inputs.titanos }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = repository_dispatch ]; then
+            version=$EVENT_VERSION ref=$EVENT_REF
+          else
+            version=$INPUT_VERSION
+            if [ -z "$version" ]; then
+              version=$(gh release view --repo ra5on/TitanOS --json tagName -q .tagName)
+              version=${version#v}
+            fi
+            ref=v$version
+          fi
+          [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$ ]]
+          [[ $ref =~ ^[A-Za-z0-9._-]+$ ]]
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          repository: ra5on/TitanOS
+          ref: ${{ steps.target.outputs.ref }}
+      - uses: actions/checkout@v7
+        with:
+          path: plugins-repo
+
+      - uses: ./plugins-repo/.github/actions/titanos-image
+        with:
+          version: ${{ steps.target.outputs.version }}
+
+      - name: What to publish
+        id: plan
+        env:
+          EVENT_KERNEL: ${{ github.event.client_payload.kernel }}
+          EVENT_PACKAGE: ${{ github.event.client_payload.kernelPackage }}
+          SETS: ${{ inputs.sets || '' }}
+        working-directory: plugins-repo
+        run: |
+          identity=$(python3 scripts/sets.py kernel "$TITANOS/build/mkosi.output")
+          kernel=$(jq -r .kernel <<<"$identity") package=$(jq -r .kernelPackage <<<"$identity")
+          if [ "$GITHUB_EVENT_NAME" = repository_dispatch ] && { [ "$kernel" != "$EVENT_KERNEL" ] || [ "$package" != "$EVENT_PACKAGE" ]; }; then
+            echo "the rebuilt image has $kernel $package, the TitanOS release $EVENT_KERNEL $EVENT_PACKAGE" >&2
+            exit 1
+          fi
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName -q '.[].tagName' > "$RUNNER_TEMP/tags"
+          mkdir -p "$RUNNER_TEMP/current"
+          current=-
+          if gh release download catalog --repo "$GITHUB_REPOSITORY" -p 'catalog.json*' -D "$RUNNER_TEMP/current"; then
+            current=$RUNNER_TEMP/current
+            minisign -V -q -p keys/titanos-release-1.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-recovery-1.pub -m "$current/catalog.json"
+          fi
+          has_kernel=false previous=
+          if [ "$current" != - ]; then
+            has_kernel=$(jq --arg k "$kernel" --arg p "$package" '[.kernels[] | select(.kernel == $k and .kernelPackage == $p)] | length > 0' "$current/catalog.json")
+            previous=$(jq -r '.common.tag // empty' "$current/catalog.json")
+          fi
+          case "$GITHUB_EVENT_NAME:$SETS" in
+            repository_dispatch:*) want_kernel=$([ "$has_kernel" = true ] && echo false || echo true); want_common=$([ -n "$previous" ] && echo false || echo true) ;;
+            push:*) want_kernel=false want_common=true ;;
+            *:kernel) want_kernel=true want_common=false ;;
+            *:common) want_kernel=false want_common=true ;;
+            *) want_kernel=true want_common=true ;;
+          esac
+          kernel_tag=$(python3 scripts/sets.py next kernel "$package" "$RUNNER_TEMP/tags")
+          common_tag=$(python3 scripts/sets.py next common - "$RUNNER_TEMP/tags")
+          if [ -n "$previous" ]; then
+            gh release download "$previous" --repo "$GITHUB_REPOSITORY" -D "$RUNNER_TEMP/previous"
+            python3 scripts/sets.py verify "$RUNNER_TEMP/previous"
+            echo "previous=$RUNNER_TEMP/previous" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Kernel $kernel ($package): publish $kernel_tag: $want_kernel; $common_tag: $want_common (previous ${previous:-none})"
+          echo "kernel=$([ "$want_kernel" = true ] && echo "$kernel_tag")" >> "$GITHUB_OUTPUT"
+          echo "kernel_tag=$kernel_tag" >> "$GITHUB_OUTPUT"
+          echo "common_tag=$common_tag" >> "$GITHUB_OUTPUT"
+          echo "want_common=$want_common" >> "$GITHUB_OUTPUT"
+
+      - uses: ./plugins-repo/.github/actions/build-sets
+        id: sets
+        with:
+          kernel-tag: ${{ steps.plan.outputs.kernel_tag }}
+          common-tag: ${{ steps.plan.outputs.common_tag }}
+          previous-common: ${{ steps.plan.outputs.previous }}
+          force: ${{ inputs.force || 'false' }}
+          base: ${{ steps.target.outputs.version }}
+
+      - name: Common set worth publishing
+        id: publish
+        env:
+          WANT: ${{ steps.plan.outputs.want_common }}
+          CHANGED: ${{ steps.sets.outputs.changed }}
+          TAG: ${{ steps.plan.outputs.common_tag }}
+        run: |
+          # A common set in which every plugin kept its previous build changes nothing.
+          if [ "$WANT" = true ] && [ -n "$CHANGED" ]; then echo "common=$TAG" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: ./plugins-repo/.github/actions/test-sets
+        with:
+          version: ${{ steps.target.outputs.version }}
+
+      - uses: actions/upload-artifact@v7
+        if: steps.plan.outputs.kernel != '' || steps.publish.outputs.common != ''
+        with:
+          name: sets
+          path: plugins-repo/out/sets/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Sign and publish
+    needs: build
+    if: needs.build.outputs.kernel != '' || needs.build.outputs.common != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # The environment asks for an approval and holds the signing key.
+    environment: release
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: sets
+          path: sets
+      - name: Sign, publish the sets, then point the catalog to them
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+          MINISIGN_PASSWORD: ${{ secrets.MINISIGN_PASSWORD }}
+          KERNEL_TAG: ${{ needs.build.outputs.kernel }}
+          COMMON_TAG: ${{ needs.build.outputs.common }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends minisign
+          if [ -z "$MINISIGN_SECRET_KEY" ]; then
+            echo "the environment 'release' holds no MINISIGN_SECRET_KEY" >&2
+            exit 1
+          fi
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
+          for pair in "kernel:$KERNEL_TAG" "common:$COMMON_TAG"; do
+            set=${pair%%:*} tag=${pair#*:}
+            [ -n "$tag" ] || continue
+            rm -f sets/$set/*.minisig
+            python3 scripts/sets.py sign "sets/$set" "$key"
+            # Only a signature TitanOS accepts may be published.
+            python3 scripts/sets.py verify "sets/$set"
+            gh release create "$tag" sets/$set/* --title "$tag" --latest=false \
+              --notes "Plugin set $tag, built and tested with the image of TitanOS $VERSION. License: FSL-1.1-ALv2 for the TitanOS integration; third-party licenses in the *-licenses.tar.gz archives, sources in *-sources.tar.gz."
+            current=-
+            rm -rf catalog-current catalog-new
+            if gh release download catalog -p 'catalog.json*' -D catalog-current; then current=catalog-current; fi
+            python3 scripts/sets.py pointer "sets/$set" "$current" catalog-new "$key"
+            if ! gh release view catalog >/dev/null 2>&1; then
+              gh release create catalog --title "Plugin catalog" --latest=false \
+                --notes "Signed pointer to the current plugin sets (catalog.json). TitanOS reads it; see docs/PLUGIN-REPO.md in ra5on/TitanOS."
+            fi
+            gh release upload catalog catalog-new/catalog.json catalog-new/catalog.json.minisig --clobber
+          done

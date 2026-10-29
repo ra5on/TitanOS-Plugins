@@ -1,13 +1,17 @@
 #!/bin/bash
-# Build a separate sysext against the exact kernel of the already built image.
+# Build a separate sysext against the exact kernel of the already built image
+# ($TITANOS/build/mkosi.output). The plugin is version <driver>-<set revision>;
+# NVIDIA_REVISION marks an independent driver update of a kernel set.
 # Run as root (or with sudo). Never installs NVIDIA packages on the build host.
 set -euo pipefail
 export PATH="$PATH:/usr/sbin:/sbin"
 cd "$(dirname "$0")/.."
-version=${1:?usage: make-nvidia-plugin.sh <TitanOS version>}
-[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$ ]]
+set_revision=${1:?usage: make-nvidia-plugin.sh <set revision>}
+[[ $set_revision =~ ^(0|[1-9][0-9]{0,5})$ ]]
+titanos=${TITANOS:?TITANOS must name the TitanOS checkout with the built image}
+label=${SET_TAG:-test}
 [[ $(id -u) == 0 ]] || { echo "Run with sudo; only the disposable build root is changed" >&2; exit 1; }
-kernel=${NVIDIA_KERNEL:-$(cat build/mkosi.output/kernel-version)}
+kernel=${NVIDIA_KERNEL:-$(cat "$titanos/build/mkosi.output/kernel-version")}
 [[ $kernel =~ ^[A-Za-z0-9][A-Za-z0-9.+_-]{0,100}$ ]]
 revision=${NVIDIA_REVISION:-0}
 [[ $revision =~ ^[0-9]+$ ]]
@@ -24,7 +28,7 @@ mkosi --directory plugins/nvidia/build --output-directory "$work" \
     --package "linux-headers-$kernel" --force build
 root=$work/root
 stage=$work/plugin
-python3 scripts/make-nvidia-sdk.py "$root" "$kernel" "$version" "$output"
+python3 scripts/make-nvidia-sdk.py "$root" "$kernel" "$label" "$output"
 
 while read -r file; do
     if [[ $file == nvidia-kernel-open-dkms_* ]]; then
@@ -78,17 +82,18 @@ cp -a plugins/nvidia/root "$stage/usr/share/titanos/nvidia/integration-source"
 # The original kernel sources accompany every binary plugin, not only a link.
 cp -a "$root/usr/share/doc/nvidia-kernel-open-dkms" "$stage/usr/share/doc/"
 cp -a "$root/usr/share/common-licenses" "$stage/usr/share/"
-python3 scripts/nvidia-plugin-metadata.py "$stage" "$kernel" "$version"
+python3 scripts/nvidia-plugin-metadata.py "$stage" "$kernel" "$label"
 chmod -R go-w "$stage"
-plugin_version=$driver-titanos-$version
+plugin_version=$driver-$set_revision
 if [[ $revision != 0 ]]; then
+    # A driver update names no TitanOS release: it fits every base with this kernel.
     plugin_version=$plugin_version-r$revision
-    python3 - "$stage/plugin.json" "$version" "$revision" <<'PYMETA'
+    python3 - "$stage/plugin.json" "$revision" <<'PYMETA'
 import json,sys
 from pathlib import Path
-p=Path(sys.argv[1]); data=json.loads(p.read_text()); data.update(titanos=sys.argv[2],revision=int(sys.argv[3])); p.write_text(json.dumps(data,indent=2)+"\n")
+p=Path(sys.argv[1]); data=json.loads(p.read_text()); data.update(revision=int(sys.argv[2])); p.write_text(json.dumps(data,indent=2)+"\n")
 PYMETA
 fi
 scripts/make-plugin.sh nvidia "$plugin_version" "$stage" "$output"
 tar -C "$stage/usr/share" -czf "$output/nvidia-licenses.tar.gz" doc common-licenses titanos/nvidia
-echo "Built NVIDIA $driver for TitanOS $version, kernel $kernel"
+echo "Built NVIDIA $plugin_version for kernel $kernel"

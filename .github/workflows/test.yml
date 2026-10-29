@@ -1,0 +1,69 @@
+name: Test
+
+# Builds every plugin against a fresh TitanOS image and boots that image with
+# them in UEFI QEMU, the way a release does. Disposable signing key only;
+# nothing is published.
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      titanos_ref:
+        description: 'TitanOS branch, tag or commit the image is built from'
+        default: main
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Script tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends minisign
+      - run: python3 -m unittest discover -s scripts/tests -v
+      - name: Shell scripts
+        run: bash -n scripts/*.sh
+
+  plugins:
+    name: Plugins on the TitanOS image
+    needs: unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      VERSION: 0.99.0-rehearsal
+      TITANOS: ${{ github.workspace }}
+      PLUGINS: ${{ github.workspace }}/plugins-repo
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: ra5on/TitanOS
+          ref: ${{ inputs.titanos_ref || 'main' }}
+      - uses: actions/checkout@v7
+        with:
+          path: plugins-repo
+
+      - uses: ./plugins-repo/.github/actions/titanos-image
+        with:
+          version: ${{ env.VERSION }}
+
+      - name: Set tags for this image
+        id: tags
+        run: |
+          package=$(python3 plugins-repo/scripts/sets.py kernel build/mkosi.output | jq -r .kernelPackage | tr + _)
+          echo "kernel=kernel-$package-1" >> "$GITHUB_OUTPUT"
+
+      - uses: ./plugins-repo/.github/actions/build-sets
+        with:
+          kernel-tag: ${{ steps.tags.outputs.kernel }}
+          common-tag: common-1
+          base: ${{ env.VERSION }}
+
+      - uses: ./plugins-repo/.github/actions/test-sets
+        with:
+          version: ${{ env.VERSION }}
