@@ -1,0 +1,19 @@
+{
+  "version": "1.104.1",
+  "url": "https://pkgs.tailscale.com/stable/tailscale_1.104.1_amd64.tgz",
+  "sha256": "108d1d96ecf410d305571e173516f27038f870919a9b89c914a167c6d33a4528",
+  "size": 41130123,
+  "source": "https://github.com/tailscale/tailscale/tree/v1.104.1",
+  "notices": [
+    {
+      "file": "LICENSE",
+      "url": "https://raw.githubusercontent.com/tailscale/tailscale/v1.104.1/LICENSE",
+      "sha256": "a7ca6186a7963a0a60740f6047760eecd7a0234e8c38bd7e1e0bbcb324bda45b"
+    },
+    {
+      "file": "third-party.html",
+      "url": "https://tailscale.com/licenses/tailscale",
+      "sha256": "110cc1e2c9a0280884b8752f4cd0841313f45b4488dee32d008c469757315512"
+    }
+  ]
+}

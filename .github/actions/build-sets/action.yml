@@ -1,0 +1,71 @@
+name: Build plugin sets
+description: >-
+  Builds every official plugin against the TitanOS image ($TITANOS) and puts
+  them into a kernel set and a common set under plugins-repo/out/sets.
+  Unchanged kernel-independent plugins keep the build of the previous common
+  set. The sets are not signed here.
+
+inputs:
+  kernel-tag:
+    description: Tag of the kernel set, kernel-<kernel package>-<n>
+    required: true
+  common-tag:
+    description: Tag of the common set, common-<n>
+    required: true
+  previous-common:
+    description: Folder with the previous common set, empty if there is none
+    default: ''
+  force:
+    description: Rebuild kernel-independent plugins even with unchanged inputs
+    default: 'false'
+  base:
+    description: TitanOS version of the image (minBase of the sets)
+    required: true
+outputs:
+  changed:
+    description: Kernel-independent plugins built anew (space separated)
+    value: ${{ steps.sets.outputs.changed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Build the plugins
+      shell: bash
+      working-directory: plugins-repo
+      env:
+        KERNEL_TAG: ${{ inputs.kernel-tag }}
+        COMMON_TAG: ${{ inputs.common-tag }}
+      run: |
+        kernel_revision=${KERNEL_TAG##*-}
+        common_revision=${COMMON_TAG##*-}
+        sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$KERNEL_TAG" scripts/make-nvidia-plugin.sh "$kernel_revision"
+        sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$KERNEL_TAG" python3 scripts/make-driver-plugins.py "$kernel_revision"
+        sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$COMMON_TAG" scripts/make-tools-plugins.sh "$common_revision"
+        sudo chown -R "$(id -u):$(id -g)" out
+
+    - name: NVIDIA compilation in the NAS build environment
+      shell: bash
+      working-directory: backend
+      run: sudo env PATH="$PATH" TITANOS_TEST_NVIDIA_SDK="$PLUGINS/out/plugins/nvidia-build-sdk.tar.zst" go test ./internal/plugins -run '^TestRealNASBuildEnvironment$' -count=1 -timeout 25m -v
+
+    - name: Sets
+      id: sets
+      shell: bash
+      working-directory: plugins-repo
+      env:
+        KERNEL_TAG: ${{ inputs.kernel-tag }}
+        COMMON_TAG: ${{ inputs.common-tag }}
+        PREVIOUS: ${{ inputs.previous-common }}
+        FORCE: ${{ inputs.force }}
+        BASE: ${{ inputs.base }}
+      run: |
+        image="$TITANOS/build/mkosi.output"
+        python3 scripts/sets.py index kernel "$KERNEL_TAG" out/plugins "$image" "$BASE" out/sets/kernel
+        python3 scripts/sets.py index common "$COMMON_TAG" out/plugins "$image" "$BASE" out/sets/common
+        if [ -n "$PREVIOUS" ] && [ "$FORCE" != true ]; then
+          changed=$(python3 scripts/sets.py carry out/sets/common "$PREVIOUS")
+        else
+          changed=$(jq -r '[.plugins[].name] | join(" ")' out/sets/common/index.json)
+        fi
+        echo "Kernel-independent plugins built anew: ${changed:-none}"
+        echo "changed=$changed" >> "$GITHUB_OUTPUT"

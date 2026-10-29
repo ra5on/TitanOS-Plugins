@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+# NetBird filters its peers in its own nftables tables; their drops apply
+# whatever iptables accepts. Tailscale's ts-input chain, however, drops
+# 100.64.0.0/10 sources that do not arrive on tailscale0, and NetBird uses the
+# same range. Accept what arrives on NetBird's interface before Tailscale's
+# hooks. Forwarded packets from wt0 pass ts-forward and need no rule.
+rule="-i wt0 -m comment --comment titanos-netbird -j ACCEPT"
+for firewall in iptables ip6tables; do
+    if [ "${1:-}" = remove ]; then
+        while "$firewall" -w 5 -C INPUT $rule 2>/dev/null; do "$firewall" -w 5 -D INPUT $rule; done
+        continue
+    fi
+    first=$("$firewall" -w 5 -S INPUT | sed -n '2p')
+    [ "$first" != "-A INPUT $rule" ] || continue
+    while "$firewall" -w 5 -C INPUT $rule 2>/dev/null; do "$firewall" -w 5 -D INPUT $rule; done
+    "$firewall" -w 5 -I INPUT 1 $rule
+done

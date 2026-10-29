@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+. /run/titanos-tailscale/runtime
+# Forwarding is shared with Docker/VMs: never turn it off on plugin shutdown.
+# Preserve IPv6 router advertisements on interfaces that currently accept them.
+if [ -n "$TAILSCALE_ROUTES" ] || [ "$TAILSCALE_ADVERTISE_EXIT" = true ]; then
+    for path in /proc/sys/net/ipv6/conf/*/accept_ra; do
+        [ -f "$path" ] || continue
+        [ "$(cat "$path")" != 1 ] || printf '2\n' > "$path"
+    done
+    sysctl -qw net.ipv4.ip_forward=1 net.ipv6.conf.all.forwarding=1
+fi
+lan=false
+[ -z "$TAILSCALE_EXIT_NODE" ] || lan=true
+tailscale set --advertise-routes="$TAILSCALE_ROUTES" --advertise-exit-node="$TAILSCALE_ADVERTISE_EXIT" \
+    --exit-node="$TAILSCALE_EXIT_NODE" --exit-node-allow-lan-access="$lan" \
+    --accept-routes="$TAILSCALE_ACCEPT_ROUTES" --accept-dns="$TAILSCALE_ACCEPT_DNS" \
+    --snat-subnet-routes=true --netfilter-mode=on --ssh=false --auto-update=false --webclient=false
+/usr/libexec/titanos-tailscale-firewall

@@ -1,0 +1,17 @@
+#!/bin/sh
+# TitanOS Coral USB inventory. The kernel's USB support needs no extra module.
+# FSL-1.1-ALv2, Copyright 2026 ra5on.
+set -eu
+found=0
+for path in /sys/bus/usb/devices/*; do
+    [ -r "$path/idVendor" ] && [ -r "$path/idProduct" ] || continue
+    id=$(cat "$path/idVendor"):$(cat "$path/idProduct")
+    case "$id" in
+        1a6e:089a) state='waiting for application firmware' ;;
+        18d1:9302) state='Edge TPU runtime active' ;;
+        *) continue ;;
+    esac
+    printf '%s  %s  %s\n' "${path##*/}" "$id" "$state"
+    found=1
+done
+[ "$found" = 1 ] || { echo 'No Coral USB accelerator found'; exit 1; }

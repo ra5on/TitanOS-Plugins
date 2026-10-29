@@ -1,0 +1,55 @@
+name: Test plugin sets
+description: >-
+  Signs the sets with the disposable key, packs them into a TitanOS release the
+  way its release workflow does (scripts/plugin-set.py import) and boots that
+  release in UEFI QEMU with the plugins: NVIDIA, Tailscale and NetBird in
+  smoke-release.py; Intel GPU Tools, Coral USB, the driver plugins and
+  container devices in smoke-storage.py.
+
+inputs:
+  version:
+    description: TitanOS version of the image
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Sign with the disposable key
+      shell: bash
+      working-directory: plugins-repo
+      run: |
+        for set in kernel common; do
+          python3 scripts/sets.py sign "out/sets/$set" "$RUNNER_TEMP/rehearsal.key"
+          python3 scripts/sets.py verify "out/sets/$set" "$TITANOS/build/mkosi.extra/usr/share/titanos/update-keys"
+        done
+
+    - name: Pack a TitanOS release with them
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        python3 scripts/plugin-set.py import --base "$VERSION" --keys build/mkosi.extra/usr/share/titanos/update-keys "$PLUGINS/out/sets/kernel" "$PLUGINS/out/sets/common"
+        printf '%s\n' 'Plugin rehearsal. Disposable signing key. Not for distribution.' > changelog.txt
+        case "$VERSION" in *-*) channel=beta ;; *) channel=stable ;; esac
+        BASE_VERSION="$VERSION" scripts/make-release.sh "$VERSION" "$channel" changelog.txt
+        scripts/sign-release.sh out/release "$RUNNER_TEMP/rehearsal.key"
+        python3 scripts/verify-release.py out/release build/mkosi.extra/usr/share/titanos/update-keys
+
+    - name: NVIDIA, Tailscale and NetBird in UEFI QEMU
+      shell: bash
+      run: python3 scripts/smoke-release.py "out/release/titanos-${{ inputs.version }}.zip" --plugins out/release --timeout 420
+
+    - name: Intel GPU Tools, Coral USB, driver plugins and container devices in UEFI QEMU
+      shell: bash
+      run: python3 scripts/smoke-storage.py "out/release/titanos-${{ inputs.version }}.zip" --plugins out/release --timeout 420
+
+    - uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: plugins-boot-log
+        path: |
+          out/release-smoke*.log
+          out/storage-smoke*.log
+          out/network-smoke*.log
+        if-no-files-found: ignore
+        retention-days: 7
