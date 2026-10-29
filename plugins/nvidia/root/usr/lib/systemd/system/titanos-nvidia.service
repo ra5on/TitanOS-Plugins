@@ -1,0 +1,11 @@
+[Unit]
+Description=TitanOS NVIDIA driver and container devices
+After=systemd-udevd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/titanos/nvidia-runtime start
+ExecStop=/usr/lib/titanos/nvidia-runtime stop
+TimeoutStartSec=30
+TimeoutStopSec=30

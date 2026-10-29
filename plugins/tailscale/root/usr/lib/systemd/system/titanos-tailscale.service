@@ -1,0 +1,20 @@
+[Unit]
+Description=TitanOS Tailscale remote access
+After=network-online.target titanos-firewall-open.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+EnvironmentFile=/run/titanos-tailscale/runtime
+Environment=TS_NO_LOGS_NO_SUPPORT=true
+Environment=TS_DEBUG_FIREWALL_MODE=iptables
+ExecStart=/usr/sbin/tailscaled --state=${TAILSCALE_STATE} --socket=/run/tailscale/tailscaled.sock --port=41641
+ExecStartPost=/usr/libexec/titanos-tailscale-runtime apply
+ExecStopPost=/usr/sbin/tailscaled --cleanup
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=tailscale
+RuntimeDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=30
+TimeoutStopSec=20

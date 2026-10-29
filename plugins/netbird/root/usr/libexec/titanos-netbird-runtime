@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+case ${1:-} in
+apply)
+    . /run/titanos-netbird/runtime
+    # Forwarding is shared with Docker/VMs/Tailscale: switch it on before
+    # NetBird routes, so NetBird restores "on" when it stops. Never turn it
+    # off here. Preserve IPv6 router advertisements where they are accepted.
+    if [ "$NETBIRD_SERVE_ROUTES" = true ]; then
+        for path in /proc/sys/net/ipv6/conf/*/accept_ra; do
+            [ -f "$path" ] || continue
+            [ "$(cat "$path")" != 1 ] || printf '2\n' > "$path"
+        done
+        sysctl -qw net.ipv4.ip_forward=1 net.ipv6.conf.all.forwarding=1
+    fi
+    /usr/libexec/titanos-netbird-firewall
+    ;;
+stop)
+    /usr/libexec/titanos-netbird-firewall remove
+    ;;
+*)
+    echo "usage: $0 apply|stop" >&2
+    exit 2
+    ;;
+esac

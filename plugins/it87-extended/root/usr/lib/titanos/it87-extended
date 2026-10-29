@@ -1,0 +1,29 @@
+#!/bin/sh
+# TitanOS it87-extended: make sure the it87 module of this plugin, not the one
+# of the system, is the loaded one. FSL-1.1-ALv2, Copyright 2026 ra5on.
+#
+# TitanOS loads the plugin's modules through its own module index before
+# this service starts. If the system's it87 was loaded already (by hand),
+# that load did nothing; replace it here. Module parameters are never set:
+# a resource conflict with ACPI stays a visible failure (docs/PLUGINS.md).
+set -eu
+index=/run/titanos-plugin-modules
+wanted=$(modinfo -b "$index" -F version it87 2>/dev/null || true)
+if [ -z "$wanted" ]; then
+    echo "it87 of the plugin not found in $index" >&2
+    exit 1
+fi
+loaded=$(cat /sys/module/it87/version 2>/dev/null || true)
+if [ "$loaded" = "$wanted" ]; then
+    exit 0
+fi
+if [ -d /sys/module/it87 ]; then
+    echo "replacing the loaded it87 (${loaded:-system}) with the plugin's ($wanted)"
+    modprobe -r it87
+fi
+modprobe -d "$index" it87
+loaded=$(cat /sys/module/it87/version 2>/dev/null || true)
+if [ "$loaded" != "$wanted" ]; then
+    echo "it87 ${loaded:-none} is loaded, expected $wanted" >&2
+    exit 1
+fi
