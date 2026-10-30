@@ -103,8 +103,9 @@ def pack(target,source,destination):
     return manifest
 
 def sign(path,key):
-    password=os.environ.get('MINISIGN_PASSWORD')
-    subprocess.run(['minisign','-S','-s',str(key),'-m',str(path)],input=None if password is None else password+'\n',text=True,check=True)
+    # Tests only: TitanOS signs driver updates (scripts/sign-plugin-set.py nvidia).
+    if os.environ.get('MINISIGN_PASSWORD') is not None: raise SystemExit('driver updates are signed by TitanOS, not here')
+    subprocess.run(['minisign','-S','-s',str(key),'-m',str(path)],stdin=subprocess.DEVNULL,check=True)
     verify(path)
 
 def sign_channel(directory,key):
@@ -151,10 +152,8 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='command',required=True)
     p=sub.add_parser('prepare');p.add_argument('tag');p.add_argument('lock',type=Path);p.add_argument('output',type=Path);p.add_argument('--force',action='store_true')
     p=sub.add_parser('pack');p.add_argument('target',type=Path);p.add_argument('source',type=Path);p.add_argument('output',type=Path)
-    p=sub.add_parser('sign');p.add_argument('directory',type=Path);p.add_argument('key',type=Path)
     p=sub.add_parser('verify');p.add_argument('directory',type=Path)
     args=parser.parse_args()
     if args.command=='prepare': print(json.dumps(prepare(args.version,args.lock,args.output,args.force)))
     elif args.command=='pack': pack(args.target,args.source,args.output)
-    elif args.command=='sign': sign_channel(args.directory,args.key)
     else: verify_directory(args.directory)

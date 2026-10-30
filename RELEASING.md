@@ -10,6 +10,13 @@ und aktualisiert `catalog.json` (Serial + 1). Dafür braucht TitanOS das
 Repository-Secret `PLUGINS_DISPATCH_TOKEN` (Fine-grained-Token nur für dieses
 Repository, Contents: read and write); damit stößt es hier auch Bauten an.
 
+TitanOS signiert mit seinem eigenen Skript (`scripts/sign-plugin-set.py`) und
+führt keinen Code aus diesem Repository neben dem Schlüssel aus. Hier gibt es
+deshalb kein `sets.py sign`/`pointer` und kein `nvidia-update-release.py sign`
+mehr; `sets.py rehearsal-sign` signiert nur Proben mit dem Wegwerf-Schlüssel und
+bricht ab, sobald `MINISIGN_PASSWORD` gesetzt ist. Dieses Repository hat kein
+Environment `release` und keine Signatur-Secrets.
+
 ## Abläufe (`.github/workflows/release.yml`)
 
 - **Volles TitanOS-Release:** Dessen Release-Workflow schickt
