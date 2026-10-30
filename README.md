@@ -30,7 +30,7 @@ Satz selbst und der Zeiger bleiben dabei unverändert.
   (`packages.lock.json`) und Lizenzhinweise; `plugins/drivers/drivers.json`
   beschreibt die Treiber-Plugins mit festen Commits und SHA-256.
 - `scripts/` – Bau (`make-*-plugin.*`, `make-driver-plugins.py`,
-  `make-plugin.sh`), Sätze und Zeiger (`sets.py`), NVIDIA-Updates
+  `make-plugin.sh`), Sätze und Probesignatur (`sets.py`), NVIDIA-Updates
   (`nvidia-update-release.py`), Tests in `scripts/tests/`.
 - Die Katalogtexte und Hardware-Regeln (`plugins/catalog/<name>.json`) liegen in
   TitanOS, weil das Abbild sie auch ohne Netz braucht. Gebaut wird immer gegen

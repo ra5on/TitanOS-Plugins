@@ -19,7 +19,7 @@ runs:
       working-directory: plugins-repo
       run: |
         for set in kernel common; do
-          python3 scripts/sets.py sign "out/sets/$set" "$RUNNER_TEMP/rehearsal.key"
+          python3 scripts/sets.py rehearsal-sign "out/sets/$set" "$RUNNER_TEMP/rehearsal.key"
           python3 scripts/sets.py verify "out/sets/$set" "$TITANOS/build/mkosi.extra/usr/share/titanos/update-keys"
         done
 

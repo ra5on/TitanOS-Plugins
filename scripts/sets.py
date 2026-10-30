@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plugin sets of this repository: index, carry-over, signing and the pointer.
+"""Plugin sets of this repository: index, carry-over, rehearsal signing and the pointer.
 
 A set is one GitHub release: "common-<n>" (kernel-independent plugins) or
 "kernel-<kernel package>-<n>" (plugins for one exact Debian kernel). Its
@@ -7,11 +7,14 @@ index.json names every plugin with the hashes TitanOS checks; the pointer
 catalog.json in the fixed release "catalog" names the current sets. Format and
 checks: docs/PLUGIN-REPO.md in TitanOS.
 
+Releases are signed only by TitanOS (scripts/sign-plugin-set.py there); no
+code of this repository runs next to the release key. Signing here is for
+rehearsals and tests with a disposable key without a password.
+
   sets.py index   <kind> <tag> <plugins dir> <image dir> <base> <set dir>
   sets.py carry   <set dir> <previous set dir>
-  sets.py sign    <set dir> <secret key>
+  sets.py rehearsal-sign <set dir> <disposable key>
   sets.py verify  <set dir> [keys dir]
-  sets.py pointer <set dir> <current catalog dir or -> <output dir> <secret key>
   sets.py next    <kind> <kernel package or -> <existing tags file>
   sets.py kernel  <image dir>
 """
@@ -165,10 +168,11 @@ def carry(directory, previous):
 
 
 def sign(path, key):
-    password = os.environ.get("MINISIGN_PASSWORD")
+    """Signs with a disposable key; the release key never comes here."""
+    if os.environ.get("MINISIGN_PASSWORD") is not None:
+        raise SystemExit("releases are signed by TitanOS (scripts/sign-plugin-set.py), not here")
     subprocess.run(["minisign", "-S", "-s", str(key), "-m", str(path), "-t", "TitanOS plugins: " + path.name],
-                   input=None if password is None else password + "\n", text=True, check=True,
-                   stdout=subprocess.DEVNULL)
+                   stdin=subprocess.DEVNULL, check=True, stdout=subprocess.DEVNULL)
 
 
 def verified(path, keys):
@@ -202,7 +206,8 @@ def verify(directory, keys=KEYS):
 
 
 def pointer(directory, current, output, key):
-    """catalog.json with the new set, serial one higher than the current."""
+    """catalog.json with the new set, serial one higher than the current
+    (tests only; TitanOS writes the real pointer)."""
     directory, output = Path(directory), Path(output)
     index = json.loads((directory / "index.json").read_text())
     ref = {"tag": index["tag"], "index": digest(directory / "index.json")}
@@ -239,9 +244,8 @@ def main(args):
     commands = {
         "index": (6, lambda a: index(*a)),
         "carry": (2, lambda a: carry(*a)),
-        "sign": (2, lambda a: sign_set(*a)),
+        "rehearsal-sign": (2, lambda a: sign_set(*a)),
         "verify": (None, lambda a: verify(*a)),
-        "pointer": (4, lambda a: pointer(*a)),
         "next": (3, lambda a: next_tag(*a)),
         "kernel": (1, lambda a: print(json.dumps(dict(zip(("kernel", "kernelPackage", "debian", "sysextLevel"), image_identity(a[0])))))),
     }
