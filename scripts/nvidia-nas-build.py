@@ -21,7 +21,10 @@ def status(lock):
     (work/'source-status.json').write_text(json.dumps({'driver':lock['driver'],'toolkit':lock['toolkit'],'kernel':kernel,'version':version,'downloaded':True})+'\n')
 if sys.argv[1]=='check':
     index=updater.authenticate(updater.download(updater.REPOSITORY+'InRelease',1<<20),updater.download(updater.REPOSITORY+'Packages.gz',8<<20),recipe/'plugins/nvidia/repository.pub')
-    lock=updater.select(base,index)
+    # titand names the driver the owner chose; without one the newest.
+    driver=os.environ.get('TITANOS_NVIDIA_DRIVER') or 'latest'
+    lock=updater.select(base,index,driver)
+    (work/'versions.json').write_text(json.dumps({'drivers':updater.drivers(base,index)})+'\n')
     candidate=work/'candidate.json';candidate.write_text(json.dumps(lock,indent=2)+'\n')
     fetcher.fetch(candidate,work/'packages');candidate.replace(lockpath);status(lock)
     print('Downloaded authenticated NVIDIA',lock['driver'],flush=True);sys.exit(0)

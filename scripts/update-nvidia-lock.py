@@ -64,7 +64,8 @@ def version_key(version):
         raise ValueError('unsupported package version: '+version)
     return tuple(int(n) for n in re.split('[.-]',version))
 
-def select(lock, text, driver='latest'):
+def index_packages(lock, text):
+    """name -> version -> package of the packages the lock names."""
     wanted = {p['name'] for p in lock['packages']}
     packages = {name:{} for name in wanted}
     for record in text.split('\n\n'):
@@ -80,6 +81,19 @@ def select(lock, text, driver='latest'):
         if version in packages[name]:
             raise ValueError('duplicate NVIDIA package version')
         packages[name][version]={'name':name,'version':version,'file':filename,'sha256':fields['SHA256']}
+    return wanted,packages
+
+def drivers(lock, text):
+    """Every upstream driver version with all driver packages of the lock,
+    newest first: what a NAS may choose to build."""
+    wanted,packages=index_packages(lock,text)
+    common=set.intersection(*(set(packages[name]) for name in wanted-TOOLKIT))
+    return sorted({v.split('-')[0] for v in common},key=version_key,reverse=True)
+
+def select(lock, text, driver='latest'):
+    if driver!='latest' and not re.fullmatch(r'\d+(?:\.\d+){1,3}',driver):
+        raise ValueError('invalid NVIDIA driver version: '+driver)
+    wanted,packages=index_packages(lock,text)
     groups=[]
     for group in (wanted-TOOLKIT, wanted&TOOLKIT):
         common=set.intersection(*(set(packages[name]) for name in group))
