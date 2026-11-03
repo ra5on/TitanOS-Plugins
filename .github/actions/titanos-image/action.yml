@@ -7,6 +7,13 @@ inputs:
   version:
     description: TitanOS version the image is built as
     required: true
+  kernel-variant:
+    description: >-
+      "" for Debian's kernel, "new" for the image with the kernel of
+      trixie-backports (kernel choice "Neu", TitanOS docs/KERNEL.md); the
+      plugins are then built against that one.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -27,3 +34,15 @@ runs:
         make build VERSION="$VERSION"
         VERSION="$VERSION" MKOSI_SUDO=1 scripts/make-zip.sh
         sudo chown -R "$(id -u):$(id -g)" out build/mkosi.output
+
+    - name: The image with the newer kernel in place of the default one
+      if: inputs.kernel-variant == 'new'
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        VERSION="$VERSION" MKOSI_SUDO=1 scripts/make-zip.sh --kernel-new
+        sudo chown -R "$(id -u):$(id -g)" out build/mkosi.output-new
+        rm -rf build/mkosi.output
+        mv build/mkosi.output-new build/mkosi.output
+        cp out/kernel-new/vmlinuz out/kernel-new/initrd.img out/kernel-new/filesystem.squashfs out/stick/titanos/a/
