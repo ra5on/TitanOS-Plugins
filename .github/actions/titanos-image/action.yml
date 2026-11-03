@@ -46,3 +46,6 @@ runs:
         rm -rf build/mkosi.output
         mv build/mkosi.output-new build/mkosi.output
         cp out/kernel-new/vmlinuz out/kernel-new/initrd.img out/kernel-new/filesystem.squashfs out/stick/titanos/a/
+        # Only one system: make-release.sh would otherwise also carry this
+        # image as the variant "new" next to itself and refuse it.
+        rm -rf out/kernel-new
