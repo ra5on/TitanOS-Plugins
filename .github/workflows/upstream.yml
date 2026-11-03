@@ -1,0 +1,83 @@
+name: Upstream versions
+
+# Every night: newer stable releases of Tailscale and NetBird
+# (scripts/upstream.py). A newer one is pinned on main and a common set is
+# built and tested for it (release.yml, sets=common). ra5on/TitanOS signs it
+# without an approval only if its check (scripts/plugin-guard.py there) finds
+# nothing changed but the versions of these plugins; otherwise the owner
+# approves as always.
+#
+# A changed license of the program itself stops the run: nothing is pinned,
+# an issue with the label upstream asks the owner to look.
+#
+# A commit pushed with the workflow token starts no push workflow, so the
+# release workflow is started explicitly.
+
+on:
+  schedule:
+    - cron: '47 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: upstream
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Newer upstream releases
+        id: check
+        run: python3 scripts/upstream.py check | tee -a "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: contains(steps.check.outputs.names, 'netbird')
+        with:
+          # The notices of NetBird's Go modules come through the module proxy.
+          go-version: stable
+          cache: false
+
+      - name: Pin them, test, start the common set
+        if: steps.check.outputs.names != ''
+        env:
+          NAMES: ${{ steps.check.outputs.names }}
+          OUTPUTS: ${{ toJSON(steps.check.outputs) }}
+        run: |
+          message=Upstream:
+          for name in $NAMES; do
+            version=$(jq -r --arg n "$name" '.[$n]' <<<"$OUTPUTS")
+            python3 scripts/upstream.py bump "$name" "$version"
+            message="$message $name $version,"
+          done
+          python3 -m unittest discover -s scripts/tests -p 'test_upstream.py'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add plugins
+          git commit -m "${message%,}"
+          git push origin HEAD:main
+          gh workflow run release.yml --ref main -f sets=common
+          echo "${message%,}; common set started." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report a failure
+        if: failure()
+        env:
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create upstream --color B60205 --description 'An upstream update needs the owner' 2>/dev/null || true
+          issue=$(gh issue list --state open --label upstream --json number --jq '.[0].number // empty')
+          text="Der nächtliche Lauf für neue Plugin-Versionen ist gescheitert (bei einer geänderten Lizenz absichtlich): $RUN"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "$text"
+          else
+            gh issue create --label upstream --title 'Plugin-Versionen: Lauf gescheitert' --body "$text"
+          fi
