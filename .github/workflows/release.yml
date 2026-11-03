@@ -124,7 +124,7 @@ jobs:
           current=-
           if gh release download catalog --repo "$GITHUB_REPOSITORY" -p 'catalog.json*' -D "$RUNNER_TEMP/current"; then
             current=$RUNNER_TEMP/current
-            minisign -V -q -p keys/titanos-release-1.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-recovery-1.pub -m "$current/catalog.json"
+            minisign -V -q -p keys/titanos-release-2.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-release-1.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-recovery-1.pub -m "$current/catalog.json"
           fi
           has_kernel=false previous=
           if [ "$current" != - ]; then
