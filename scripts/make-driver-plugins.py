@@ -99,9 +99,11 @@ class DeterministicTar:
 
 
 def chroot(root, *command, capture=False):
-    """Run inside the build root with /dev available (compiler probes need /dev/null)."""
-    args = ["unshare", "--mount", "--propagation", "private", "sh", "-c",
-            'mount --rbind /dev "$1/dev" && exec chroot "$@"', "sh", str(root), *command]
+    """Run inside the build root with /dev available (compiler probes need
+    /dev/null) and its own /proc (objtool of Linux 7.x reads it)."""
+    args = ["unshare", "--mount", "--pid", "--fork", "--propagation", "private", "sh", "-c",
+            'mount --rbind /dev "$1/dev" && mkdir -p "$1/proc" && mount -t proc proc "$1/proc" && exec chroot "$@"',
+            "sh", str(root), *command]
     if capture:
         return subprocess.check_output(args, text=True)
     subprocess.run(args, check=True)

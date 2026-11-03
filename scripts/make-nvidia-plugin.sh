@@ -42,8 +42,9 @@ done < <(python3 -c 'import json; print("\n".join(p["file"] for p in json.load(o
 # No DKMS post-install script, modprobe, or driver installation runs on the host.
 tar -C "$root/usr/src" -czf "$output/nvidia-kernel-sources.tar.gz" "nvidia-$driver"
 # Debian splits generated headers (build) from shared source headers (source).
-# A private mount namespace supplies /dev/null for compiler feature probes.
-unshare --mount --propagation private sh -c 'mount --bind /dev "$1/dev"; exec chroot "$@"' sh \
+# A private mount namespace supplies /dev/null for compiler feature probes,
+# and its own /proc: objtool of Linux 7.x reads /proc while linking.
+unshare --mount --pid --fork --propagation private sh -c 'mount --bind /dev "$1/dev"; mkdir -p "$1/proc"; mount -t proc proc "$1/proc"; exec chroot "$@"' sh \
     "$root" make -C "/usr/src/nvidia-$driver" -j"${NVIDIA_BUILD_JOBS:-2}" \
     modules KERNEL_UNAME="$kernel" SYSSRC="/lib/modules/$kernel/source" SYSOUT="/lib/modules/$kernel/build"
 modules=$stage/usr/lib/modules/$kernel/updates/titanos-nvidia
