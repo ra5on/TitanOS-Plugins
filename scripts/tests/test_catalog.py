@@ -30,9 +30,12 @@ class CatalogTest(unittest.TestCase):
                     self.assertRegex(self.drivers["firmware"]["files"][path]["sha256"], r"^[0-9a-f]{64}$")
                 if "external" in plugin:
                     external = self.drivers["external"][plugin["external"]]
-                    self.assertRegex(external["commit"], r"^[0-9a-f]{40}$")
-                    self.assertRegex(external["sha256"], r"^[0-9a-f]{64}$")
-                    self.assertIn(external["commit"], external["url"])
+                    # Not pinned yet (all three empty): make-driver-plugins.py refuses
+                    # to build it until scripts/pin-driver-source.py has filled them.
+                    if external["commit"] or external["sha256"] or external["url"]:
+                        self.assertRegex(external["commit"], r"^[0-9a-f]{40}$")
+                        self.assertRegex(external["sha256"], r"^[0-9a-f]{64}$")
+                        self.assertIn(external["commit"], external["url"])
                 if name != "it87-extended":
                     # Drivers: recommended only while no driver has the device.
                     self.assertTrue(all(rule.get("unbound") for rule in entry["hardware"]))

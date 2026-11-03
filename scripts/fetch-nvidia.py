@@ -2,6 +2,7 @@
 """Fetch only the reviewed, checksum-pinned NVIDIA packages, without installing them."""
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import tarfile
@@ -34,6 +35,11 @@ def extract(package, destination):
 
 def fetch(lock_path, destination):
     lock = json.loads(lock_path.read_text())
+    for package in lock["packages"]:
+        if not package["version"] or not re.fullmatch(r"[0-9a-f]{64}", package["sha256"]):
+            plugin = lock_path.parent.name
+            raise ValueError(f"{lock_path} is not filled yet ({package['name']}); run "
+                             f"scripts/update-nvidia-lock.py --plugin {plugin} --output {lock_path} and review it")
     destination.mkdir(parents=True, exist_ok=True)
     for package in lock["packages"]:
         target = destination / package["file"]

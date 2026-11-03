@@ -1,0 +1,66 @@
+#!/bin/sh
+# Hands Realtek network chips from the kernel's r8169 to the vendor driver of
+# this plugin and back. Only the listed device IDs move, and only while they
+# are with r8169 (or with no driver): a card that belongs to a VM (vfio-pci)
+# or any other Realtek chip stays where it is. r8169 itself is never
+# blacklisted, so on-board RTL8111 ports keep working.
+#
+#   realtek-rebind start|stop <vendor driver> <device id>...
+#
+# SYSFS (default /sys) exists for the tests.
+set -eu
+action=${1:-}
+driver=${2:-}
+[ -n "$driver" ] && [ $# -ge 3 ] || { echo "usage: $0 start|stop <driver> <device id>..." >&2; exit 2; }
+shift 2
+sys=${SYSFS:-/sys}
+status=0
+
+current() {
+    if [ -e "$1/driver" ]; then
+        basename "$(readlink "$1/driver")"
+    fi
+}
+
+for dev in "$sys"/bus/pci/devices/*; do
+    [ -r "$dev/vendor" ] || continue
+    [ "$(cat "$dev/vendor")" = 0x10ec ] || continue
+    id=$(cut -c3- "$dev/device" | tr 'abcdef' 'ABCDEF')
+    wanted=
+    for want in "$@"; do
+        [ "$id" = "$want" ] && wanted=1
+    done
+    [ -n "$wanted" ] || continue
+    address=$(basename "$dev")
+    now=$(current "$dev")
+    case $action in
+        start)
+            case $now in
+                "$driver") continue ;;
+                r8169|"") ;;
+                *) echo "$address: left with $now"; continue ;;
+            esac
+            echo "$driver" > "$dev/driver_override"
+            [ -z "$now" ] || echo "$address" > "$dev/driver/unbind"
+            echo "$address" > "$sys/bus/pci/drivers_probe" || true
+            if [ "$(current "$dev")" = "$driver" ]; then
+                echo "$address: $now -> $driver"
+            else
+                # The vendor driver refused the chip: give it back to r8169.
+                echo > "$dev/driver_override"
+                echo "$address" > "$sys/bus/pci/drivers_probe" || true
+                echo "$address: $driver did not take the device, back to r8169" >&2
+                status=1
+            fi
+            ;;
+        stop)
+            [ "$now" = "$driver" ] || continue
+            echo > "$dev/driver_override"
+            echo "$address" > "$dev/driver/unbind"
+            echo "$address" > "$sys/bus/pci/drivers_probe" || true
+            echo "$address: $driver -> $(current "$dev")"
+            ;;
+        *) echo "usage: $0 start|stop <driver> <device id>..." >&2; exit 2 ;;
+    esac
+done
+exit $status

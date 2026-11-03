@@ -9,6 +9,28 @@
       "sha256": "41be5663d46dd79e2697c342987fb80c4a83cc9bd7dc441021c872ea21192ef9",
       "license": "GPL-2.0-or-later",
       "notices": ["COPYING"]
+    },
+    "r8125": {
+      "comment": "Realtek's vendor driver as mirrored unchanged by OpenWrt. Pinned with scripts/pin-driver-source.py r8125 <commit>; empty values mean not pinned yet, and the build refuses it.",
+      "url": "",
+      "repository": "https://github.com/openwrt/rtl8125",
+      "commit": "",
+      "date": "",
+      "sha256": "",
+      "license": "GPL-2.0-only",
+      "dir": "src",
+      "notices": []
+    },
+    "r8126": {
+      "comment": "Realtek's vendor driver as mirrored unchanged by OpenWrt. Pinned with scripts/pin-driver-source.py r8126 <commit>; empty values mean not pinned yet, and the build refuses it.",
+      "url": "",
+      "repository": "https://github.com/openwrt/rtl8126",
+      "commit": "",
+      "date": "",
+      "sha256": "",
+      "license": "GPL-2.0-only",
+      "dir": "src",
+      "notices": []
     }
   },
   "firmware": {
@@ -46,6 +68,24 @@
       "modules": ["it87"],
       "services": ["titanos-it87-extended.service"],
       "root": "plugins/it87-extended/root"
+    },
+    "r8125": {
+      "external": "r8125",
+      "build": "upstream",
+      "built": ["r8125"],
+      "modules": ["r8125"],
+      "services": ["titanos-r8125.service"],
+      "root": "plugins/r8125/root",
+      "rebind": ["8125", "3000"]
+    },
+    "r8126": {
+      "external": "r8126",
+      "build": "upstream",
+      "built": ["r8126"],
+      "modules": ["r8126"],
+      "services": ["titanos-r8126.service"],
+      "root": "plugins/r8126/root",
+      "rebind": ["8126"]
     }
   }
 }

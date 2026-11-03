@@ -1,0 +1,123 @@
+{
+  "comment": "Proprietary NVIDIA driver of the 580 branch, the last one for Maxwell, Pascal and Volta (owner decision of 31.10.2026). Empty versions: not filled yet. Fill with: python3 scripts/update-nvidia-lock.py --plugin nvidia-legacy --output plugins/nvidia-legacy/packages.lock.json (authenticated NVIDIA index, review the diff). The build refuses an unfilled lock.",
+  "branch": "580",
+  "driver": "",
+  "toolkit": "",
+  "repository": "https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/",
+  "packages": [
+    {
+      "name": "libcuda1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvcuvid1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-cfg1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-container-tools",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-container1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-encode1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-gpucomp",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-ml1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-nvvm4",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-pkcs11-openssl3",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-ptxjitcompiler1",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-container-toolkit",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-container-toolkit-base",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-kernel-dkms",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-modprobe",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-persistenced",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "libnvidia-sandboxutils",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-driver-cuda",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    },
+    {
+      "name": "nvidia-kernel-support",
+      "version": "",
+      "file": "",
+      "sha256": ""
+    }
+  ]
+}

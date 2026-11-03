@@ -95,16 +95,26 @@ def select(lock, text, driver='latest'):
         raise ValueError('invalid NVIDIA driver version: '+driver)
     wanted,packages=index_packages(lock,text)
     groups=[]
+    # A legacy driver stays on its branch (nvidia-legacy: 580, the last one
+    # for Maxwell, Pascal and Volta).
+    branch=lock.get('branch','')
     for group in (wanted-TOOLKIT, wanted&TOOLKIT):
-        common=set.intersection(*(set(packages[name]) for name in group))
-        if group == wanted-TOOLKIT and driver!='latest':
-            common={v for v in common if v.split('-')[0]==driver}
+        def usable(name):
+            versions=set(packages[name])
+            if group == wanted-TOOLKIT and branch:
+                versions={v for v in versions if v.split('.')[0]==branch}
+            if group == wanted-TOOLKIT and driver!='latest':
+                versions={v for v in versions if v.split('-')[0]==driver}
+            return versions
+        common=set.intersection(*(usable(name) for name in group))
         if not common:
-            raise ValueError('no complete matching NVIDIA package set')
+            missing=sorted(name for name in group if not usable(name))
+            raise ValueError('no complete matching NVIDIA package set'+(' (none for: '+', '.join(missing)+')' if missing else ''))
         chosen=max(common,key=version_key)
         # Daily latest checks never automatically downgrade either package group.
+        # A lock that was never filled (versions empty) has nothing to compare.
         previous=next(p['version'] for p in lock['packages'] if p['name'] in group)
-        if driver=='latest' and version_key(chosen)<version_key(previous):
+        if driver=='latest' and previous and version_key(chosen)<version_key(previous):
             raise ValueError('NVIDIA package set went backwards')
         groups.append((group,chosen))
     output=dict(lock,repository=REPOSITORY,driver=groups[0][1].split('-')[0],toolkit=groups[1][1].split('-')[0])
@@ -115,9 +125,10 @@ def select(lock, text, driver='latest'):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--driver',default='latest',help='latest or an explicitly requested upstream version')
+    parser.add_argument('--plugin',default='nvidia',choices=['nvidia','nvidia-legacy'],help='whose packages.lock.json to refresh')
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
-    lock=json.loads((ROOT/'plugins/nvidia/packages.lock.json').read_text())
+    lock=json.loads((ROOT/'plugins'/args.plugin/'packages.lock.json').read_text())
     index=authenticate(download(REPOSITORY+'InRelease',1<<20),download(REPOSITORY+'Packages.gz',8<<20),ROOT/'plugins/nvidia/repository.pub')
     updated=select(lock,index,args.driver)
     args.output.parent.mkdir(parents=True,exist_ok=True)

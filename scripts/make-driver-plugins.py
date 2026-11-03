@@ -197,30 +197,52 @@ def main():
                 compiled.append(target)
             if "external" in plugin:
                 external = spec["external"][plugin["external"]]
+                if not (re.fullmatch(r"[0-9a-f]{40}", external["commit"]) and re.fullmatch(r"[0-9a-f]{64}", external["sha256"])
+                        and external["commit"] in external["url"]):
+                    fail(f"{name}: the source {plugin['external']} is not pinned yet; run "
+                         f"scripts/pin-driver-source.py {plugin['external']} <commit> and review the change")
                 data = fetch(external["url"], external["sha256"], cache)
                 target = build / name / plugin["external"]
                 shutil.rmtree(target, ignore_errors=True)
                 target.mkdir(parents=True)
+                upstream_build = plugin.get("build") == "upstream"
                 with tarfile.open(fileobj=io.BytesIO(data)) as upstream_archive:
                     members = {Path(m.name).relative_to(Path(m.name).parts[0]).as_posix(): m
                                for m in upstream_archive.getmembers() if len(Path(m.name).parts) > 1}
-                    for wanted in plugin["files"] + external["notices"]:
+                    if upstream_build:
+                        # The vendor's own Makefile/Kbuild in one directory: every
+                        # regular file of it, nothing from elsewhere in the archive.
+                        prefix = external["dir"].strip("/") + "/"
+                        files = sorted(path.removeprefix(prefix) for path, member in members.items()
+                                       if path.startswith(prefix) and "/" not in path.removeprefix(prefix) and member.isfile())
+                        if "Makefile" not in files and "Kbuild" not in files:
+                            fail(f"{name}: no Makefile in {external['dir']} of {external['url']}")
+                        wanted_files = [(prefix + f, f) for f in files]
+                    else:
+                        files = plugin["files"]
+                        wanted_files = [(f, f) for f in files]
+                    wanted_files += [(f, Path(f).name) for f in external["notices"]]
+                    for wanted, local in wanted_files:
                         member = members.get(wanted)
                         if member is None or not member.isfile():
                             fail(f"{wanted} missing in {external['url']}")
-                        (target / wanted).write_bytes(upstream_archive.extractfile(member).read())
-                (target / "Kbuild").write_text(f"obj-m := {' '.join(m + '.o' for m in plugin['built'])}\n")
-                # The upstream Makefile derives the version from git; pin it to the commit.
-                short = external["commit"][:12]
-                chroot(root, "make", "-C", headers, f"M=/{target.relative_to(root)}",
-                       f'ccflags-y=-DIT87_DRIVER_VERSION="\\"{short}\\""', "modules",
+                        (target / local).write_bytes(upstream_archive.extractfile(member).read())
+                if upstream_build:
+                    flags = []
+                else:
+                    (target / "Kbuild").write_text(f"obj-m := {' '.join(m + '.o' for m in plugin['built'])}\n")
+                    # The upstream Makefile derives the version from git; pin it to the commit.
+                    short = external["commit"][:12]
+                    flags = [f'ccflags-y=-DIT87_DRIVER_VERSION="\\"{short}\\""']
+                chroot(root, "make", "-C", headers, f"M=/{target.relative_to(root)}", *flags, "modules",
                        f"-j{os.environ.get('DRIVER_BUILD_JOBS', '2')}")
                 # The files compiled, with their license and the Kbuild file; the
                 # full upstream archive (datasheets and more) stays at the pinned commit.
+                notice_names = [Path(f).name for f in external["notices"]]
                 for file in sorted(target.iterdir()):
-                    if file.name in [*plugin["files"], *external["notices"], "Kbuild"]:
+                    if file.is_file() and file.name in [*files, *notice_names, "Kbuild"]:
                         archive.add(file, arcname=f"{plugin['external']}-{external['commit']}/{file.name}", filter=normalized)
-                for notice in external["notices"]:
+                for notice in notice_names:
                     shutil.copyfile(target / notice, notices / notice)
                 source_links = [f"{external['repository']}/tree/{external['commit']}", f"{name}-sources.tar.gz"]
                 compiled.append(target)

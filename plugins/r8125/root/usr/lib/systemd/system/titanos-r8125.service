@@ -1,0 +1,12 @@
+[Unit]
+Description=TitanOS r8125: Realtek vendor driver for the listed network chips
+Documentation=https://github.com/ra5on/TitanOS/blob/main/docs/PLUGINS.md
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Device IDs: plugins/drivers/drivers.json "rebind" (checked by the tests).
+ExecStart=/usr/lib/titanos/realtek-rebind start r8125 8125 3000
+ExecStop=/usr/lib/titanos/realtek-rebind stop r8125 8125 3000
+TimeoutStartSec=60
+TimeoutStopSec=60

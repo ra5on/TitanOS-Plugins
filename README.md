@@ -14,7 +14,7 @@ Jede Veröffentlichung ist ein **Satz**, also eine GitHub-Release mit festem Tag
 | Satz | Inhalt | Neu gebaut |
 | --- | --- | --- |
 | `common-<n>` | Tailscale, NetBird, Coral USB, Intel GPU Tools | wenn sich eines dieser Plugins ändert; unveränderte behalten ihren Bau und ihre Version |
-| `kernel-<Kernelpaket>-<n>` | NVIDIA (mit Bauumgebung für das NAS), `wangxun-nic`, `intel-qat`, `it87-extended` | wenn ein volles TitanOS-Release einen neuen Kernel bringt |
+| `kernel-<Kernelpaket>-<n>` | NVIDIA (mit Bauumgebung für das NAS), `nvidia-legacy`, `wangxun-nic`, `intel-qat`, `it87-extended`, `r8125`, `r8126` | wenn ein volles TitanOS-Release einen neuen Kernel bringt |
 
 Die feste Release `catalog` enthält den signierten Zeiger `catalog.json` auf die
 aktuellen Sätze. Releases werden nie als „latest“ markiert. Signiert ist alles
@@ -45,9 +45,33 @@ make build VERSION=0.99.0-dev && MKOSI_SUDO=1 VERSION=0.99.0-dev scripts/make-zi
 # hier: Plugins mit Satz-Revision 1 bauen, Ergebnis in out/plugins
 sudo env PATH="$PATH" TITANOS=../TitanOS scripts/make-tools-plugins.sh 1
 sudo env PATH="$PATH" TITANOS=../TitanOS scripts/make-nvidia-plugin.sh 1
+sudo env PATH="$PATH" TITANOS=../TitanOS NVIDIA_PLUGIN=nvidia-legacy scripts/make-nvidia-plugin.sh 1
 sudo env PATH="$PATH" TITANOS=../TitanOS python3 scripts/make-driver-plugins.py 1
 python3 -m unittest discover -s scripts/tests
 ```
+
+### Festlegen, was gebaut wird
+
+- Treiber aus fremden Quellen (`it87`, `r8125`, `r8126`) sind in
+  `plugins/drivers/drivers.json` auf Commit und SHA-256 festgelegt. Leere Werte
+  heißen „noch nicht festgelegt“; dann bricht der Bau ab. Festlegen (mit Netz,
+  danach den Diff und die Quelländerungen prüfen):
+  `python3 scripts/pin-driver-source.py r8125 <40-stelliger Commit>`;
+  `--check` listet offene Festlegungen.
+- `r8125`/`r8126` sind Realteks Herstellertreiber (unveränderte Quellen über die
+  Spiegel `openwrt/rtl8125` bzw. `openwrt/rtl8126`), gebaut mit deren eigenem
+  Makefile. Der Dienst `titanos-r8125`/`titanos-r8126` holt nur die genannten
+  Chips von `r8169` (driver_override) und gibt sie beim Ausschalten zurück;
+  `r8169` wird nie gesperrt. Der Bau prüft, dass die Modul-Aliase genau den
+  Hardware-Regeln des Katalogs entsprechen; nennt der Treiber weitere IDs,
+  bricht er mit der Liste ab.
+- `nvidia-legacy`: proprietärer NVIDIA-Treiber der Reihe 580 (Maxwell, Pascal,
+  Volta), Pakete in `plugins/nvidia-legacy/packages.lock.json`. Füllen bzw.
+  aktualisieren (authentifizierter NVIDIA-Index, bleibt auf `branch` 580):
+  `python3 scripts/update-nvidia-lock.py --plugin nvidia-legacy --output plugins/nvidia-legacy/packages.lock.json`.
+  Ein leeres Lock lässt den Bau abbrechen. Gleiche Laufzeit und gleicher Dienst
+  wie `nvidia`; TitanOS schaltet nie beide zugleich ein (`conflicts`). Kein
+  NAS-Bau, keine eigenen Treiberupdates.
 
 Veröffentlichen: [RELEASING.md](RELEASING.md).
 
