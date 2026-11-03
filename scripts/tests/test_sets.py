@@ -117,6 +117,15 @@ class SetsTest(unittest.TestCase):
             sets.next_tag("kernel", "6.12.120-1", tags)
         self.assertEqual([c.args[0] for c in out.call_args_list], ["common-4", f"kernel-{PACKAGE}-2", "kernel-6.12.120-1-1"])
 
+    def test_backports_tag_is_a_valid_git_tag(self):
+        tags = self.tmp / "tags"
+        tags.write_text("kernel-7.2.11-1_bpo13_1-1\n")
+        with patch("builtins.print") as out:
+            sets.next_tag("kernel", "7.2.11-1~bpo13+1", tags)
+        tag = out.call_args.args[0]
+        self.assertEqual(tag, "kernel-7.2.11-1_bpo13_1-2")
+        self.assertEqual(subprocess.run(["git", "check-ref-format", "refs/tags/" + tag]).returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

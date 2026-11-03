@@ -34,12 +34,13 @@ COMMON = {"intel-gpu-tools", "coral-usb", "tailscale", "netbird"}
 # Files of a kernel set besides the plugins' own.
 KERNEL_EXTRAS = ["nvidia-kernel-sources.tar.gz", "nvidia-build-sdk.tar.zst", "nvidia-build-sdk.json",
                  "nvidia-build-sdk-sources.txt"]
-TAG = re.compile(r"(common|kernel-[0-9][0-9A-Za-z._~-]*)-([1-9][0-9]*)")
+TAG = re.compile(r"(common|kernel-[0-9][0-9A-Za-z._-]*)-([1-9][0-9]*)")
 
 
 def tag_package(package):
-    """A "+" in a Debian version would need escaping in download URLs."""
-    return package.replace("+", "_")
+    """A "+" in a Debian version would need escaping in download URLs; git
+    refuses "~" (backports: 7.2.11-1~bpo13+1) and ":" (an epoch) in tags."""
+    return re.sub(r"[+~:]", "_", package)
 MAX_KERNELS = 64
 
 # What a kernel-independent plugin is built from, besides the TitanOS catalog

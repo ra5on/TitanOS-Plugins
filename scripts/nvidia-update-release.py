@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 KEYS=ROOT/'keys'
 REPO=os.environ.get('PLUGIN_RELEASES','https://github.com/ra5on/TitanOS-Plugins/releases/download/')
-TAG=re.compile(r'kernel-[0-9][0-9A-Za-z._~-]*-[1-9][0-9]*')
+TAG=re.compile(r'kernel-[0-9][0-9A-Za-z._-]*-[1-9][0-9]*')
 HASH=re.compile('[0-9a-f]{64}')
 
 def digest(path):

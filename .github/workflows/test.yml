@@ -63,8 +63,9 @@ jobs:
       - name: Set tags for this image
         id: tags
         run: |
-          package=$(python3 plugins-repo/scripts/sets.py kernel build/mkosi.output | jq -r .kernelPackage | tr + _)
-          echo "kernel=kernel-$package-1" >> "$GITHUB_OUTPUT"
+          package=$(python3 plugins-repo/scripts/sets.py kernel build/mkosi.output | jq -r .kernelPackage)
+          printf '' > "$RUNNER_TEMP/tags"
+          echo "kernel=$(python3 plugins-repo/scripts/sets.py next kernel "$package" "$RUNNER_TEMP/tags")" >> "$GITHUB_OUTPUT"
 
       - uses: ./plugins-repo/.github/actions/build-sets
         with:
