@@ -244,9 +244,14 @@ def main():
             aliases.update(fields.get("alias", []))
             shutil.copyfile(path, modules_dir / f"{module}.ko")
         rules = {rule["modalias"] for rule in catalog.get("hardware", [])}
-        if rules != aliases:
-            fail(f"{name}: $TITANOS/plugins/catalog/{name}.json hardware rules differ from the module aliases "
-                 f"(missing {sorted(aliases - rules)}, extra {sorted(rules - aliases)})")
+        # The catalog may only recommend the plugin for devices its modules
+        # drive. A newer kernel (choice "Neu") may drive more than the
+        # catalog names: that is only a note, the catalog follows later.
+        if not rules <= aliases:
+            fail(f"{name}: $TITANOS/plugins/catalog/{name}.json recommends devices the modules do not drive: "
+                 f"{sorted(rules - aliases)}")
+        if aliases - rules:
+            print(f"note: {name} for {kernel} drives devices the catalog does not name: {sorted(aliases - rules)}", flush=True)
 
         firmware = spec.get("firmware", {})
         for path in plugin.get("firmware", []) + plugin.get("notices", []):
