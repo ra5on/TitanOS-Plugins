@@ -41,7 +41,7 @@ def sha256(data):
 def image_kernel(image):
     """The kernel release and the Debian version of its linux-image package."""
     kernel = (image / "kernel-version").read_text().strip()
-    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+\+[a-z0-9]+-[a-z0-9]+", kernel):
+    if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+\+[a-z0-9.]+-[a-z0-9]+", kernel):
         fail(f"unexpected kernel release {kernel!r}")
     status = (image / "rootfs/var/lib/dpkg/status").read_text()
     for block in status.split("\n\n"):
