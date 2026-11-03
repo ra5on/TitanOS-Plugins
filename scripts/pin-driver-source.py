@@ -37,7 +37,8 @@ def check_archive(data, external):
                  for m in archive.getmembers() if m.isfile() and len(Path(m.name).parts) > 1}
     missing = [n for n in external.get("notices", []) if n not in names]
     if "dir" in external:
-        prefix = external["dir"].strip("/") + "/"
+        # An empty "dir" means the archive's top directory.
+        prefix = external["dir"].strip("/") + "/" if external["dir"].strip("/") else ""
         if not {prefix + "Makefile", prefix + "Kbuild"} & names:
             missing.append(prefix + "Makefile")
     if missing:

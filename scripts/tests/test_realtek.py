@@ -119,7 +119,8 @@ class PinTest(unittest.TestCase):
         self.assertIn("is not pinned yet", source)
 
     def test_pin_writes_only_the_four_values(self):
-        data = self.archive({"src/Makefile": b"obj-m := r8125.o\n", "src/r8125_n.c": b"/* GPL-2.0 */\n", "README": b"x"})
+        # The OpenWrt mirrors keep the vendor files at the top level ("dir": "").
+        data = self.archive({"Makefile": b"obj-m := r8125.o\n", "r8125_n.c": b"/* GPL-2.0 */\n", "README.md": b"x"})
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "drivers.json"
             original = (ROOT / "plugins/drivers/drivers.json").read_text()
@@ -145,6 +146,14 @@ class PinTest(unittest.TestCase):
             self.assertEqual(len(changed), 4, changed)
             with self.assertRaises(SystemExit):
                 pin.check_archive(self.archive({"README": b"x"}), after)
+            with self.assertRaises(SystemExit):
+                pin.check_archive(self.archive({"src/Makefile": b"x"}), after)
+
+    def test_dir_names_a_subdirectory(self):
+        external = {"dir": "src", "notices": []}
+        pin.check_archive(self.archive({"src/Makefile": b"x", "README": b"x"}), external)
+        with self.assertRaises(SystemExit):
+            pin.check_archive(self.archive({"Makefile": b"x"}), external)
 
 
 if __name__ == "__main__":

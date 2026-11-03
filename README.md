@@ -59,12 +59,13 @@ python3 -m unittest discover -s scripts/tests
   `python3 scripts/pin-driver-source.py r8125 <40-stelliger Commit>`;
   `--check` listet offene Festlegungen.
 - `r8125`/`r8126` sind Realteks Herstellertreiber (unveränderte Quellen über die
-  Spiegel `openwrt/rtl8125` bzw. `openwrt/rtl8126`), gebaut mit deren eigenem
-  Makefile. Der Dienst `titanos-r8125`/`titanos-r8126` holt nur die genannten
-  Chips von `r8169` (driver_override) und gibt sie beim Ausschalten zurück;
-  `r8169` wird nie gesperrt. Der Bau prüft, dass die Modul-Aliase genau den
-  Hardware-Regeln des Katalogs entsprechen; nennt der Treiber weitere IDs,
-  bricht er mit der Liste ab.
+  Spiegel `openwrt/rtl8125` bzw. `openwrt/rtl8126`, Dateien auf oberster Ebene,
+  daher `"dir": ""`), gebaut mit deren eigenem Makefile. Festgelegt: r8125
+  9.016.01, r8126 10.016.00. Der Dienst `titanos-r8125`/`titanos-r8126` holt
+  nur die genannten Chips von `r8169` (driver_override) und gibt sie beim
+  Ausschalten zurück; `r8169` wird nie gesperrt. Wie bei allen Treiber-Plugins
+  bricht der Bau ab, wenn der Katalog ein Gerät nennt, das die Module nicht
+  treiben; weitere IDs der Module (r8125: 8162, r8126: 5000) sind nur ein Hinweis.
 - `nvidia-legacy`: proprietärer NVIDIA-Treiber der Reihe 580 (Maxwell, Pascal,
   Volta), Pakete in `plugins/nvidia-legacy/packages.lock.json`. Füllen bzw.
   aktualisieren (authentifizierter NVIDIA-Index, bleibt auf `branch` 580):

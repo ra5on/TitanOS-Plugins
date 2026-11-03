@@ -212,7 +212,8 @@ def main():
                     if upstream_build:
                         # The vendor's own Makefile/Kbuild in one directory: every
                         # regular file of it, nothing from elsewhere in the archive.
-                        prefix = external["dir"].strip("/") + "/"
+                        # An empty "dir" means the archive's top directory.
+                        prefix = external["dir"].strip("/") + "/" if external["dir"].strip("/") else ""
                         files = sorted(path.removeprefix(prefix) for path, member in members.items()
                                        if path.startswith(prefix) and "/" not in path.removeprefix(prefix) and member.isfile())
                         if "Makefile" not in files and "Kbuild" not in files:
