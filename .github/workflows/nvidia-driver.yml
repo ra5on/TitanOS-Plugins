@@ -42,7 +42,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y --no-install-recommends minisign
           gh release download catalog -p 'catalog.json*' -D catalog
-          minisign -V -q -p keys/titanos-release-2.pub -m catalog/catalog.json || minisign -V -q -p keys/titanos-release-1.pub -m catalog/catalog.json || minisign -V -q -p keys/titanos-recovery-1.pub -m catalog/catalog.json
+          minisign -V -q -p keys/titanos-release-2.pub -m catalog/catalog.json || minisign -V -q -p keys/titanos-release-1.pub -m catalog/catalog.json || minisign -V -q -p keys/titanos-recovery-1.pub -m catalog/catalog.json || minisign -V -q -p keys/titanos-recovery-2.pub -m catalog/catalog.json
           if [ -n "$REQUESTED" ]; then
             tags=$(jq -c --arg t "$REQUESTED" '[.kernels[] | select(.tag == $t) | .tag]' catalog/catalog.json)
             [ "$tags" != '[]' ] || { echo "$REQUESTED is not in the catalog" >&2; exit 1; }
