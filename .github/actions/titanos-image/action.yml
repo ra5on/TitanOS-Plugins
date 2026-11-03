@@ -41,6 +41,11 @@ runs:
       env:
         VERSION: ${{ inputs.version }}
       run: |
+        # Two images do not fit on the runner next to its preinstalled
+        # toolchains (no space while packing the initrd, 3.11.2026); these
+        # are never used here.
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+        df -h / | tail -1
         VERSION="$VERSION" MKOSI_SUDO=1 scripts/make-zip.sh --kernel-new
         sudo chown -R "$(id -u):$(id -g)" out build/mkosi.output-new
         rm -rf build/mkosi.output
