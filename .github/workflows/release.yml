@@ -36,6 +36,9 @@ on:
       titanos:
         description: 'TitanOS version (without v) to build for; empty = newest release'
         default: ''
+      kernelVariant:
+        description: 'Kernel of the TitanOS image: empty = Debian kernel, new = trixie-backports'
+        default: ''
       sets:
         description: 'Sets to publish'
         type: choice
@@ -100,6 +103,7 @@ jobs:
       - uses: ./plugins-repo/.github/actions/titanos-image
         with:
           version: ${{ steps.target.outputs.version }}
+          kernel-variant: ${{ github.event.client_payload.kernelVariant || inputs.kernelVariant || '' }}
 
       - name: What to publish
         id: plan
