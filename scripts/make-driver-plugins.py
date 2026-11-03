@@ -51,6 +51,16 @@ def image_kernel(image):
     fail(f"linux-image-{kernel} is not installed in the image")
 
 
+def kernel_variant(package_version):
+    """"stable" (Debian) or "new" (trixie-backports, e.g. 7.2.11-1~bpo13+1)."""
+    return "new" if "~bpo" in package_version else "stable"
+
+
+def builds_for(plugin, variant):
+    """A plugin with "kernelVariants" is built only for those kernels."""
+    return variant in plugin.get("kernelVariants", ["stable", "new"])
+
+
 def fetch(url, expected, cache):
     """Download once into cache and insist on the pinned SHA-256."""
     target = cache / expected
@@ -170,6 +180,9 @@ def main():
     built_plugins = []
     for name, plugin in spec["plugins"].items():
         if only and name not in only:
+            continue
+        if not builds_for(plugin, kernel_variant(package_version)):
+            print(f"skip {name}: not built for the kernel {kernel} ({package_version})", flush=True)
             continue
         # The catalog entries live in TitanOS; the image recommends drivers with them.
         catalog = json.loads((Path(os.environ["TITANOS"]) / "plugins/catalog" / f"{name}.json").read_text())

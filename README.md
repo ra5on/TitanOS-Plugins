@@ -14,7 +14,7 @@ Jede Veröffentlichung ist ein **Satz**, also eine GitHub-Release mit festem Tag
 | Satz | Inhalt | Neu gebaut |
 | --- | --- | --- |
 | `common-<n>` | Tailscale, NetBird, Coral USB, Intel GPU Tools | wenn sich eines dieser Plugins ändert; unveränderte behalten ihren Bau und ihre Version |
-| `kernel-<Kernelpaket>-<n>` | NVIDIA (mit Bauumgebung für das NAS), `nvidia-legacy`, `wangxun-nic`, `intel-qat`, `it87-extended`, `r8125`, `r8126` | wenn ein volles TitanOS-Release einen neuen Kernel bringt |
+| `kernel-<Kernelpaket>-<n>` | NVIDIA (mit Bauumgebung für das NAS), `wangxun-nic`, `intel-qat`, `it87-extended`; `r8125`, `r8126` nur für Kernel „Stabil“ | wenn ein volles TitanOS-Release einen neuen Kernel bringt |
 
 Die feste Release `catalog` enthält den signierten Zeiger `catalog.json` auf die
 aktuellen Sätze. Releases werden nie als „latest“ markiert. Signiert ist alles
@@ -45,7 +45,6 @@ make build VERSION=0.99.0-dev && MKOSI_SUDO=1 VERSION=0.99.0-dev scripts/make-zi
 # hier: Plugins mit Satz-Revision 1 bauen, Ergebnis in out/plugins
 sudo env PATH="$PATH" TITANOS=../TitanOS scripts/make-tools-plugins.sh 1
 sudo env PATH="$PATH" TITANOS=../TitanOS scripts/make-nvidia-plugin.sh 1
-sudo env PATH="$PATH" TITANOS=../TitanOS NVIDIA_PLUGIN=nvidia-legacy scripts/make-nvidia-plugin.sh 1
 sudo env PATH="$PATH" TITANOS=../TitanOS python3 scripts/make-driver-plugins.py 1
 python3 -m unittest discover -s scripts/tests
 ```
@@ -66,8 +65,15 @@ python3 -m unittest discover -s scripts/tests
   Ausschalten zurück; `r8169` wird nie gesperrt. Wie bei allen Treiber-Plugins
   bricht der Bau ab, wenn der Katalog ein Gerät nennt, das die Module nicht
   treiben; weitere IDs der Module (r8125: 8162, r8126: 5000) sind nur ein Hinweis.
-- `nvidia-legacy`: proprietärer NVIDIA-Treiber der Reihe 580 (Maxwell, Pascal,
-  Volta), Pakete in `plugins/nvidia-legacy/packages.lock.json`. Füllen bzw.
+  Gebaut nur für Kernel „Stabil“ (`"kernelVariants": ["stable"]`, Entscheidung
+  vom 3.11.2026): die Quellen nutzen `del_timer_sync()`/`from_timer()`, die es
+  ab Linux 6.16 nicht mehr gibt. Für „Neu“ (Paketversion mit `~bpo`) überspringt
+  `make-driver-plugins.py` sie.
+- `nvidia-legacy` ist vorerst **nicht** Teil der Sätze (Entscheidung vom
+  3.11.2026): NVIDIAs Index `debian13` führt keine 580er Pakete. Code und Lock
+  bleiben für später. Proprietärer NVIDIA-Treiber der Reihe 580 (Maxwell, Pascal,
+  Volta), Pakete in `plugins/nvidia-legacy/packages.lock.json`; Bau von Hand mit
+  `NVIDIA_PLUGIN=nvidia-legacy scripts/make-nvidia-plugin.sh`. Füllen bzw.
   aktualisieren (authentifizierter NVIDIA-Index, bleibt auf `branch` 580):
   `python3 scripts/update-nvidia-lock.py --plugin nvidia-legacy --output plugins/nvidia-legacy/packages.lock.json`.
   Ein leeres Lock lässt den Bau abbrechen. Gleiche Laufzeit und gleicher Dienst

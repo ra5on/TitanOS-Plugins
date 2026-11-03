@@ -39,8 +39,8 @@ runs:
         kernel_revision=${KERNEL_TAG##*-}
         common_revision=${COMMON_TAG##*-}
         sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$KERNEL_TAG" scripts/make-nvidia-plugin.sh "$kernel_revision"
-        # Proprietary 580 driver for Maxwell/Pascal/Volta; refuses an unfilled lock.
-        sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$KERNEL_TAG" NVIDIA_PLUGIN=nvidia-legacy scripts/make-nvidia-plugin.sh "$kernel_revision"
+        # nvidia-legacy (580 for Maxwell/Pascal/Volta) is not built for now:
+        # NVIDIA's debian13 index has no 580 packages (owner decision 3.11.2026).
         sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$KERNEL_TAG" python3 scripts/make-driver-plugins.py "$kernel_revision"
         sudo env PATH="$PATH" TITANOS="$TITANOS" SET_TAG="$COMMON_TAG" scripts/make-tools-plugins.sh "$common_revision"
         sudo chown -R "$(id -u):$(id -g)" out

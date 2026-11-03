@@ -76,7 +76,9 @@
       "modules": ["r8125"],
       "services": ["titanos-r8125.service"],
       "root": "plugins/r8125/root",
-      "rebind": ["8125", "3000"]
+      "rebind": ["8125", "3000"],
+      "kernelVariants": ["stable"],
+      "kernelVariantsComment": "Only for kernel Stabil (owner decision 3.11.2026): the pinned vendor source uses del_timer_sync()/from_timer(), gone since Linux 6.16."
     },
     "r8126": {
       "external": "r8126",
@@ -85,7 +87,9 @@
       "modules": ["r8126"],
       "services": ["titanos-r8126.service"],
       "root": "plugins/r8126/root",
-      "rebind": ["8126"]
+      "rebind": ["8126"],
+      "kernelVariants": ["stable"],
+      "kernelVariantsComment": "Only for kernel Stabil (owner decision 3.11.2026): the pinned vendor source uses del_timer_sync()/from_timer(), gone since Linux 6.16."
     }
   }
 }

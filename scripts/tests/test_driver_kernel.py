@@ -29,6 +29,16 @@ class ImageKernelTest(unittest.TestCase):
                                 ("7.2.11+deb13-amd64", "7.2.11-1~bpo13+1")]:
             self.assertEqual(drivers.image_kernel(self.image(kernel, version)), (kernel, version))
 
+    def test_realtek_only_for_the_stable_kernel(self):
+        self.assertEqual(drivers.kernel_variant("6.12.115-2"), "stable")
+        self.assertEqual(drivers.kernel_variant("7.2.11-1~bpo13+1"), "new")
+        import json
+        spec = json.loads((ROOT / "plugins/drivers/drivers.json").read_text())
+        for name, plugin in spec["plugins"].items():
+            with self.subTest(plugin=name):
+                self.assertTrue(drivers.builds_for(plugin, "stable"))
+                self.assertEqual(drivers.builds_for(plugin, "new"), name not in ("r8125", "r8126"))
+
     def test_odd_releases_are_refused(self):
         for kernel in ("6.12.113", "6.12.113+deb13-amd64/../x", "6.12.113 +deb13-amd64"):
             with self.assertRaises(SystemExit):

@@ -68,8 +68,10 @@ class LegacyLockTest(unittest.TestCase):
         script = (ROOT / "scripts/make-nvidia-plugin.sh").read_text()
         self.assertIn("nvidia-legacy) dkms=nvidia-kernel-dkms sources=nvidia-legacy-sources.tar.gz", script)
         subprocess.run(["bash", "-n", str(ROOT / "scripts/make-nvidia-plugin.sh")], check=True)
+        # Not part of the sets for now (owner decision 3.11.2026): no 580
+        # packages in NVIDIA's debian13 index.
         action = (ROOT / ".github/actions/build-sets/action.yml").read_text()
-        self.assertIn("NVIDIA_PLUGIN=nvidia-legacy scripts/make-nvidia-plugin.sh", action)
+        self.assertNotIn("NVIDIA_PLUGIN=nvidia-legacy", action)
 
     def test_metadata_names_conflict_and_sources(self):
         lock = json.loads(LOCK.read_text())
