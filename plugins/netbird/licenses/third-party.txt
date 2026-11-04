@@ -2931,8 +2931,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ------------------------------------------------------------------------------
-github.com/kardianos/service (replaced by github.com/netbirdio/service) v0.0.0-20240911161631-f62744f42502
-Source: https://proxy.golang.org/github.com/netbirdio/service/@v/v0.0.0-20240911161631-f62744f42502.zip
+github.com/kardianos/service v1.3.0
+Source: https://proxy.golang.org/github.com/kardianos/service/@v/v1.3.0.zip
 
 LICENSE:
 
@@ -4379,8 +4379,8 @@ github.com/netbirdio/go-nat v0.0.0-20260821095157-6b2c8c5c74e8
 Source: https://proxy.golang.org/github.com/netbirdio/go-nat/@v/v0.0.0-20260821095157-6b2c8c5c74e8.zip
 LICENSE: same text as github.com/coreos/go-iptables v0.7.0 › LICENSE
 ------------------------------------------------------------------------------
-github.com/pion/dtls/v2 v2.2.10
-Source: https://proxy.golang.org/github.com/pion/dtls/v2/@v/v2.2.10.zip
+github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548
+Source: https://proxy.golang.org/github.com/netbirdio/ice/v4/@v/v4.0.0-20261021152109-d0e5dfacb548.zip
 
 LICENSE:
 
@@ -4395,17 +4395,41 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
+github.com/netbirdio/wireguard-go v0.0.0-20261021152105-0de46b309cdb
+Source: https://proxy.golang.org/github.com/netbirdio/wireguard-go/@v/v0.0.0-20261021152105-0de46b309cdb.zip
+
+LICENSE:
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------------------------------------------------------------------------------
+github.com/pion/dtls/v2 v2.2.10
+Source: https://proxy.golang.org/github.com/pion/dtls/v2/@v/v2.2.10.zip
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
+------------------------------------------------------------------------------
 github.com/pion/dtls/v3 v3.0.9
 Source: https://proxy.golang.org/github.com/pion/dtls/v3/@v/v3.0.9.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
-------------------------------------------------------------------------------
-github.com/pion/ice/v4 (replaced by github.com/netbirdio/ice/v4) v4.0.0-20250908184934-6202be846b51
-Source: https://proxy.golang.org/github.com/netbirdio/ice/v4/@v/v4.0.0-20250908184934-6202be846b51.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/logging v0.2.4
 Source: https://proxy.golang.org/github.com/pion/logging/@v/v0.2.4.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/mdns/v2 v2.0.7
 Source: https://proxy.golang.org/github.com/pion/mdns/v2/@v/v2.0.7.zip
@@ -4465,27 +4489,27 @@ SOFTWARE.
 ------------------------------------------------------------------------------
 github.com/pion/stun/v2 v2.0.0
 Source: https://proxy.golang.org/github.com/pion/stun/v2/@v/v2.0.0.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/stun/v3 v3.1.0
 Source: https://proxy.golang.org/github.com/pion/stun/v3/@v/v3.1.0.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/transport/v2 v2.2.4
 Source: https://proxy.golang.org/github.com/pion/transport/v2/@v/v2.2.4.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/transport/v3 v3.1.1
 Source: https://proxy.golang.org/github.com/pion/transport/v3/@v/v3.1.1.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/turn/v3 v3.0.1
 Source: https://proxy.golang.org/github.com/pion/turn/v3/@v/v3.0.1.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pion/turn/v4 v4.1.1
 Source: https://proxy.golang.org/github.com/pion/turn/v4/@v/v4.1.1.zip
-LICENSE: same text as github.com/pion/dtls/v2 v2.2.10 › LICENSE
+LICENSE: same text as github.com/netbirdio/ice/v4 v4.0.0-20261021152109-d0e5dfacb548 › LICENSE
 ------------------------------------------------------------------------------
 github.com/pkg/errors v0.9.1
 Source: https://proxy.golang.org/github.com/pkg/errors/@v/v0.9.1.zip
@@ -5735,30 +5759,6 @@ golang.org/x/time v0.15.0
 Source: https://proxy.golang.org/golang.org/x/time/@v/v0.15.0.zip
 LICENSE: same text as Go standard library go1.26.10 › LICENSE
 PATENTS: same text as golang.org/x/crypto v0.55.0 › PATENTS
-------------------------------------------------------------------------------
-golang.zx2c4.com/wireguard (replaced by github.com/netbirdio/wireguard-go) v0.0.0-20261008122457-d2b1ce9bfee9
-Source: https://proxy.golang.org/github.com/netbirdio/wireguard-go/@v/v0.0.0-20261008122457-d2b1ce9bfee9.zip
-
-LICENSE:
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
 ------------------------------------------------------------------------------
 golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
 Source: https://proxy.golang.org/golang.zx2c4.com/wireguard/wgctrl/@v/v0.0.0-20241231184526-a9ab2273dd10.zip
