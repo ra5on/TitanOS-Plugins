@@ -212,6 +212,11 @@ jobs:
             [ -n "$tag" ] || continue
             # The disposable test signatures never leave this run.
             rm -f sets/$set/*.minisig
+            # A repeated release run builds the same set again: replace its
+            # unsigned draft instead of adding a second one with the same tag.
+            for old in $(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.draft and .tag_name == \"$tag\") | .id"); do
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$old"
+            done
             gh release create "$tag" sets/$set/* --repo "$GITHUB_REPOSITORY" --draft --title "$tag" --target "$GITHUB_SHA" \
               --notes "Plugin set $tag, built and tested with the image of TitanOS $VERSION. Waiting to be signed by ra5on/TitanOS. License: FSL-1.1-ALv2 for the TitanOS integration; third-party licenses in the *-licenses.tar.gz archives, sources in *-sources.tar.gz."
           done
