@@ -38,7 +38,12 @@ jobs:
 
       - name: Newer upstream releases
         id: check
-        run: python3 scripts/upstream.py check | tee -a "$GITHUB_OUTPUT"
+        # Not through a pipe: without pipefail a failed check would look
+        # green and nobody would hear that the nightly look is broken.
+        run: |
+          python3 scripts/upstream.py check > "$RUNNER_TEMP/newer"
+          cat "$RUNNER_TEMP/newer"
+          cat "$RUNNER_TEMP/newer" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         if: contains(steps.check.outputs.names, 'netbird')

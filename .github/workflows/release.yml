@@ -122,7 +122,10 @@ jobs:
           gh release list --repo "$GITHUB_REPOSITORY" --limit 1000 --json tagName -q '.[].tagName' > "$RUNNER_TEMP/tags"
           mkdir -p "$RUNNER_TEMP/current"
           current=-
-          if gh release download catalog --repo "$GITHUB_REPOSITORY" -p 'catalog.json*' -D "$RUNNER_TEMP/current"; then
+          # No catalog release yet is the first run; a catalog that exists but
+          # cannot be loaded is an error, not a reason to build everything anew.
+          if grep -qx catalog "$RUNNER_TEMP/tags"; then
+            gh release download catalog --repo "$GITHUB_REPOSITORY" -p 'catalog.json*' -D "$RUNNER_TEMP/current"
             current=$RUNNER_TEMP/current
             minisign -V -q -p keys/titanos-release-2.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-release-1.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-recovery-1.pub -m "$current/catalog.json" || minisign -V -q -p keys/titanos-recovery-2.pub -m "$current/catalog.json"
           fi
@@ -214,7 +217,10 @@ jobs:
             rm -f sets/$set/*.minisig
             # A repeated release run builds the same set again: replace its
             # unsigned draft instead of adding a second one with the same tag.
-            for old in $(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.draft and .tag_name == \"$tag\") | .id"); do
+            # Assigned first: a failed listing stops the step instead of
+            # leaving the old draft and adding a second one.
+            olds=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.draft and .tag_name == \"$tag\") | .id")
+            for old in $olds; do
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$old"
             done
             gh release create "$tag" sets/$set/* --repo "$GITHUB_REPOSITORY" --draft --title "$tag" --target "$GITHUB_SHA" \
