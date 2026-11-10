@@ -7,6 +7,9 @@ set -eu
 # hooks. Forwarded packets from wt0 pass ts-forward and need no rule.
 rule="-i wt0 -m comment --comment titanos-netbird -j ACCEPT"
 for firewall in iptables ip6tables; do
+    # Without IPv6 in the kernel ip6tables has no tables: nothing to do
+    # there, and no reason to keep NetBird from starting.
+    "$firewall" -w 5 -S INPUT >/dev/null 2>&1 || continue
     if [ "${1:-}" = remove ]; then
         while "$firewall" -w 5 -C INPUT $rule 2>/dev/null; do "$firewall" -w 5 -D INPUT $rule; done
         continue

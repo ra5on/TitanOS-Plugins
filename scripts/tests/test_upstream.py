@@ -50,9 +50,11 @@ class UpstreamTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.run_check("1.2.3-pre", "0.0.1")
 
-    def serve_tailscale(self, version, license_text=None):
+    def serve_tailscale(self, version, license_text=None, checksum=None):
         archive = b"archive " + version.encode()
         self.served[f"https://pkgs.tailscale.com/stable/tailscale_{version}_amd64.tgz"] = archive
+        self.served[f"https://pkgs.tailscale.com/stable/tailscale_{version}_amd64.tgz.sha256"] = \
+            (checksum if checksum is not None else hashlib.sha256(archive).hexdigest()).encode()
         licenses = self.repo / "plugins/tailscale/licenses"
         self.served[f"https://raw.githubusercontent.com/tailscale/tailscale/v{version}/LICENSE"] = \
             license_text if license_text is not None else (licenses / "LICENSE").read_bytes()
@@ -79,6 +81,13 @@ class UpstreamTest(unittest.TestCase):
             upstream.bump("tailscale", "99.0.0")
         self.assertEqual((self.repo / "plugins/tailscale/packages.lock.json").read_text(), before)
         self.assertNotEqual((self.repo / "plugins/tailscale/licenses/third-party.html").read_bytes(), b"<html>new list</html>")
+
+    def test_an_archive_the_publisher_does_not_name_is_not_pinned(self):
+        before = (self.repo / "plugins/tailscale/packages.lock.json").read_text()
+        self.serve_tailscale("99.0.0", checksum="0" * 64)
+        with self.assertRaises(SystemExit):
+            upstream.bump("tailscale", "99.0.0")
+        self.assertEqual((self.repo / "plugins/tailscale/packages.lock.json").read_text(), before)
 
     def test_no_downgrade_and_only_known_plugins(self):
         with self.assertRaises(SystemExit):

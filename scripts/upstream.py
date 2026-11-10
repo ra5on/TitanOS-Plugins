@@ -73,6 +73,8 @@ PLUGINS = {
     "tailscale": {
         "latest": tailscale_latest,
         "url": "https://pkgs.tailscale.com/stable/tailscale_{v}_amd64.tgz",
+        # The publisher's own checksum of that archive.
+        "checksums": "https://pkgs.tailscale.com/stable/tailscale_{v}_amd64.tgz.sha256",
         "source": "https://github.com/tailscale/tailscale/tree/v{v}",
         "notices": [
             ("LICENSE", "https://raw.githubusercontent.com/tailscale/tailscale/v{v}/LICENSE", "fixed"),
@@ -82,6 +84,7 @@ PLUGINS = {
     "netbird": {
         "latest": netbird_latest,
         "url": "https://github.com/netbirdio/netbird/releases/download/v{v}/netbird_{v}_linux_amd64.tar.gz",
+        "checksums": "https://github.com/netbirdio/netbird/releases/download/v{v}/netbird_{v}_checksums.txt",
         "source": "https://github.com/netbirdio/netbird/tree/v{v}",
         "notices": [
             ("LICENSE", "https://raw.githubusercontent.com/netbirdio/netbird/v{v}/LICENSE", "fixed"),
@@ -122,6 +125,12 @@ def bump(name, version):
         raise SystemExit(f"{name} {version} is not newer than {lock['version']}")
     url = plugin["url"].format(v=version)
     archive = get(url)
+    # What gets pinned here is built into a plugin and may be signed without
+    # anyone looking: it has to be the archive the publisher names, not
+    # whatever this one download returned (a cut-off or swapped file).
+    published = get(plugin["checksums"].format(v=version), 1 << 20).decode("ascii", "replace")
+    if sha256(archive) not in re.findall(r"\b[0-9a-f]{64}\b", published):
+        raise SystemExit(f"{name} {version}: the archive does not match the publisher's checksum")
     licenses = REPO / "plugins" / name / "licenses"
     texts, notices = {}, []
     for file, notice_url, kind in plugin["notices"]:
