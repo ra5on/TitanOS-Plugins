@@ -92,11 +92,11 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ra5on/TitanOS
           ref: ${{ steps.target.outputs.ref }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: plugins-repo
 
@@ -177,7 +177,7 @@ jobs:
         with:
           version: ${{ steps.target.outputs.version }}
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.plan.outputs.kernel != '' || steps.publish.outputs.common != ''
         with:
           name: sets
@@ -195,15 +195,27 @@ jobs:
     # key (.github/workflows/plugin-sign.yml there). This job only leaves
     # each tested set as an unpublished draft release; TitanOS signs it after
     # the owner's approval, publishes it and updates the catalog.
+    # The attestation ties every file of a set to this workflow, this commit
+    # and this run. TitanOS asks for it before it signs (plugin-sign.yml
+    # there): a draft someone else wrote, or a file swapped in a draft, has
+    # none and is not signed.
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: sets
           path: sets
+      - name: Without the disposable test signatures
+        # They never leave this run.
+        run: find sets -name '*.minisig' -delete
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: sets/*/*
       - name: Draft releases with the unsigned sets
         env:
           KERNEL_TAG: ${{ needs.build.outputs.kernel }}
@@ -213,8 +225,6 @@ jobs:
           for pair in "kernel:$KERNEL_TAG" "common:$COMMON_TAG"; do
             set=${pair%%:*} tag=${pair#*:}
             [ -n "$tag" ] || continue
-            # The disposable test signatures never leave this run.
-            rm -f sets/$set/*.minisig
             # A repeated release run builds the same set again: replace its
             # unsigned draft instead of adding a second one with the same tag.
             # Assigned first: a failed listing stops the step instead of

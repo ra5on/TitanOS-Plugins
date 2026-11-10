@@ -31,10 +31,29 @@ Environment `release` und keine Signatur-Secrets.
   nichts, wird nichts veröffentlicht. `minBase` ist dieses Release: Ältere
   Systeme behalten ihren bisherigen Satz.
 - **Von Hand:** Release, Sätze und erzwungener Neubau wählbar.
+- **Jede Nacht (`upstream.yml`):** neuere stabile Versionen von Tailscale und
+  NetBird werden auf `main` festgeschrieben, danach baut und testet
+  `release.yml` einen `common-<n>`. TitanOS signiert ihn ohne Freigabe nur,
+  wenn sich nichts als diese Versionen geändert hat (`scripts/plugin-guard.py`
+  dort); sonst gibt `ra5on` frei wie immer.
 
 Jeder Lauf baut alle Plugins, packt sie wie TitanOS in ein Release und bootet es
 in QEMU (`test-sets`). Erst danach legt der Job `draft` die Sätze als Entwurf an.
 Schlägt etwas fehl, entsteht kein Entwurf und der Zeiger bleibt unverändert.
+
+## Herkunftsnachweis
+
+Der Job `draft` stellt für jede Datei eines Satzes einen Herkunftsnachweis aus
+(GitHub Artifact Attestation): Er bindet die Datei an `release.yml`, den Commit
+und den Lauf. TitanOS prüft ihn vor dem Signieren für jede Datei des Entwurfs
+(`gh attestation verify`, Workflow `release.yml` dieses Repositorys, Zweig
+`main`). Ein Entwurf, den jemand anders angelegt hat, oder eine im Entwurf
+ausgetauschte Datei hat keinen Nachweis und wird nicht signiert. Ein Lauf von
+Hand aus einem anderen Zweig als `main` wird deshalb auch mit Freigabe nicht
+signiert.
+
+Aktionen in den Abläufen sind auf Commits festgelegt (Kommentar nennt die
+Version).
 
 ## NVIDIA-Treiberupdates
 

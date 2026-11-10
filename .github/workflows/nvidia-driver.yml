@@ -33,7 +33,7 @@ jobs:
     outputs:
       tags: ${{ steps.targets.outputs.tags }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Kernel sets of the signed catalog
         id: targets
         env:
@@ -63,9 +63,9 @@ jobs:
     env:
       TITANOS: ${{ github.workspace }}/titanos
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The catalog descriptions (plugins/catalog) and the pinned mkosi.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ra5on/TitanOS
           path: titanos
@@ -102,7 +102,7 @@ jobs:
       - name: Validate image metadata and module compatibility
         if: steps.check.outputs.needed == 'true'
         run: python3 scripts/test-nvidia-update-image.py out/driver-release
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: steps.check.outputs.needed == 'true'
         with:
           name: driver-${{ matrix.tag }}
@@ -134,7 +134,7 @@ jobs:
         run: |
           exists=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" --jq ".artifacts | any(.name == \"driver-$TAG\")")
           echo "exists=$exists" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: steps.artifact.outputs.exists == 'true'
         with:
           name: driver-${{ matrix.tag }}

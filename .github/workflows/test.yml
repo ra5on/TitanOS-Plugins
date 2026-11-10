@@ -24,9 +24,9 @@ jobs:
     name: Script tests
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The catalog entries the manifests are merged with.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ra5on/TitanOS
           ref: ${{ inputs.titanos_ref || 'main' }}
@@ -48,11 +48,11 @@ jobs:
       TITANOS: ${{ github.workspace }}
       PLUGINS: ${{ github.workspace }}/plugins-repo
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ra5on/TitanOS
           ref: ${{ inputs.titanos_ref || 'main' }}
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: plugins-repo
 
