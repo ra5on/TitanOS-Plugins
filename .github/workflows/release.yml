@@ -229,7 +229,14 @@ jobs:
             # unsigned draft instead of adding a second one with the same tag.
             # Assigned first: a failed listing stops the step instead of
             # leaving the old draft and adding a second one.
-            olds=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq ".[] | select(.draft and .tag_name == \"$tag\") | .id")
+            releases=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100")
+            # The same set was signed and published while this run built it
+            # again: a second draft with that tag could never be published.
+            if jq -e --arg t "$tag" 'any(.[]; (.draft | not) and .tag_name == $t)' <<<"$releases" >/dev/null; then
+              echo "::notice::$tag is already published; this build is not handed over."
+              continue
+            fi
+            olds=$(jq -r --arg t "$tag" '.[] | select(.draft and .tag_name == $t) | .id' <<<"$releases")
             for old in $olds; do
               gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$old"
             done
