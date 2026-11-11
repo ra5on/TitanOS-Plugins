@@ -1,19 +1,19 @@
 {
-  "version": "1.104.5",
-  "url": "https://pkgs.tailscale.com/stable/tailscale_1.104.5_amd64.tgz",
-  "sha256": "720cbbccbfc03d8b55df72afc19e5a72e31b0f65934700aa6fa38074d4ad7bf7",
-  "size": 41369843,
-  "source": "https://github.com/tailscale/tailscale/tree/v1.104.5",
+  "version": "1.104.6",
+  "url": "https://pkgs.tailscale.com/stable/tailscale_1.104.6_amd64.tgz",
+  "sha256": "82a85429f733e52fd1a95dedb2c8dd8cd46d6603504e566a56b1779c9a7a4809",
+  "size": 41392900,
+  "source": "https://github.com/tailscale/tailscale/tree/v1.104.6",
   "notices": [
     {
       "file": "LICENSE",
-      "url": "https://raw.githubusercontent.com/tailscale/tailscale/v1.104.5/LICENSE",
+      "url": "https://raw.githubusercontent.com/tailscale/tailscale/v1.104.6/LICENSE",
       "sha256": "a7ca6186a7963a0a60740f6047760eecd7a0234e8c38bd7e1e0bbcb324bda45b"
     },
     {
       "file": "third-party.html",
       "url": "https://tailscale.com/licenses/tailscale",
-      "sha256": "475874b8c3bb5e6a30051179ea30bcd0dbc909383cc4cdc6b2ea51ada2677801"
+      "sha256": "0f3b5b09fb3185dc39a7e52d9cf3b5a710fdc713525535f80defcaa8c9651f50"
     }
   ]
 }
