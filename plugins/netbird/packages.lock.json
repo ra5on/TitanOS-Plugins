@@ -1,18 +1,18 @@
 {
-  "version": "0.82.1",
-  "url": "https://github.com/netbirdio/netbird/releases/download/v0.82.1/netbird_0.82.1_linux_amd64.tar.gz",
-  "sha256": "c8f10b89dfa01b8bcad5ec25b666a83e351be4e22eb784b822478b9326a35423",
-  "size": 16015188,
-  "source": "https://github.com/netbirdio/netbird/tree/v0.82.1",
+  "version": "0.83.1",
+  "url": "https://github.com/netbirdio/netbird/releases/download/v0.83.1/netbird_0.83.1_linux_amd64.tar.gz",
+  "sha256": "a7c79ea3cb61029c5565277152e1c32cd3ccb5258dc35c86d8d3a5b5793b91da",
+  "size": 16091157,
+  "source": "https://github.com/netbirdio/netbird/tree/v0.83.1",
   "notices": [
     {
       "file": "LICENSE",
-      "url": "https://raw.githubusercontent.com/netbirdio/netbird/v0.82.1/LICENSE",
+      "url": "https://raw.githubusercontent.com/netbirdio/netbird/v0.83.1/LICENSE",
       "sha256": "8343fe949e32a30e2261c4f0967365271d08c4644e879dec5b998d1af666fdb3"
     },
     {
       "file": "BSD-3-Clause.txt",
-      "url": "https://raw.githubusercontent.com/netbirdio/netbird/v0.82.1/LICENSES/BSD-3-Clause.txt",
+      "url": "https://raw.githubusercontent.com/netbirdio/netbird/v0.83.1/LICENSES/BSD-3-Clause.txt",
       "sha256": "8d0942fc7276024d501b15b841763780af9c2ecb92671fe103d331b6a185296c"
     },
     {
