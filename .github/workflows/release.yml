@@ -6,7 +6,8 @@ name: Release
 #   full TitanOS release: the kernel set for its kernel, if the catalog has
 #   none, and the common set if there is none yet.
 # - A push to main that changes a kernel-independent plugin: a new common set
-#   against the newest TitanOS release. Plugins whose inputs did not change
+#   against the newest TitanOS release, for an app release against its base.
+#   Plugins whose inputs did not change
 #   keep their previous build and version.
 # - Manually, for a chosen TitanOS release.
 #
@@ -86,6 +87,16 @@ jobs:
               version=${version#v}
             fi
             ref=v$version
+            # An app release keeps the image, kernel and plugins of its base
+            # (TitanOS docs/rules/UPDATES.md); its NAS look for sets of that
+            # base. Built for the app version, minBase would hide the set from
+            # every NAS on this base (common-7: minBase 1.18.0, base 0.82.0).
+            manifest=$(gh release download "v$version" --repo ra5on/TitanOS -p manifest.json -O -)
+            base=$(jq -r '.app.base // empty' <<<"$manifest")
+            if [ -n "$base" ]; then
+              echo "::notice::TitanOS $version is an app release on base $base; the sets are built for $base."
+              version=$base ref=v$base
+            fi
           fi
           [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9.]+)?$ ]]
           [[ $ref =~ ^[A-Za-z0-9._-]+$ ]]
