@@ -51,6 +51,12 @@ python3 -m unittest discover -s scripts/tests
 
 Veröffentlichen: [RELEASING.md](RELEASING.md).
 
+## Haftungsausschluss
+
+Die Plugins gehören zu TitanOS, einem privaten, nicht kommerziellen Projekt. Es wird kostenlos und ohne Gewähr bereitgestellt, die Nutzung geschieht auf eigenes Risiko. RAID und Snapshots ersetzen keine Datensicherung. Den vollständigen Hinweis auf Deutsch und Englisch enthält [DISCLAIMER.md](DISCLAIMER.md).
+
+*Part of TitanOS, a private, non-commercial project, provided free of charge and without warranty; use it at your own risk. See [DISCLAIMER.md](DISCLAIMER.md).*
+
 ## Lizenz
 
 Eigener Code: FSL-1.1-ALv2 (Fair Source, `LICENSE.md`), wie TitanOS. Jedes Plugin
