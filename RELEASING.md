@@ -26,10 +26,17 @@ Environment `release` und keine Signatur-Secrets.
   im Katalog ein Satz für diesen Kernel, entsteht `kernel-<Kernelpaket>-<n>`;
   gibt es noch keinen gemeinsamen Satz, auch `common-<n>`.
 - **Änderung an Tailscale, NetBird, Coral oder Intel GPU Tools auf `main`:**
-  neuer `common-<n>` gegen das neueste TitanOS-Release. Plugins mit
+  neuer `common-<n>` gegen das neueste TitanOS-Release. Ist es ein App-Release
+  (`app.base` im Manifest), wird gegen dessen Basis gebaut, denn Abbild, Kernel
+  und Plugins bleiben die der Basis und das NAS sucht Sätze für die Basis. Plugins mit
   unveränderten Eingaben behalten Bau und Version des vorigen Satzes; ändert sich
-  nichts, wird nichts veröffentlicht. `minBase` ist dieses Release: Ältere
-  Systeme behalten ihren bisherigen Satz.
+  nichts, wird nichts veröffentlicht. `minBase` ist dieses Release bzw. seine
+  Basis. Der Katalog zeigt nur auf einen gemeinsamen Satz: Systeme älter als
+  `minBase` sehen dann keinen gemeinsamen Satz mehr, nicht ihren bisherigen.
+  Am 21.11.2026 entstand so `common-7` mit `minBase 1.18.0` (App-Release auf
+  Basis 0.82); jedem NAS auf 0.82 fehlten danach Tailscale, NetBird, Coral und
+  Intel GPU Tools im Katalog. Behoben mit dem nächsten Satz für 0.82.0.
+- Dasselbe gilt **von Hand** ohne angegebene Version.
 - **Von Hand:** Release, Sätze und erzwungener Neubau wählbar.
 - **Jede Nacht (`upstream.yml`):** neuere stabile Versionen von Tailscale und
   NetBird werden auf `main` festgeschrieben, danach baut und testet
